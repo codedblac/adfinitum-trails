@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Mail, ArrowLeft } from "lucide-react"
 import Link from "next/link"
+import { forgotPassword } from "@/lib/auth"
 
 export function ForgotPasswordForm() {
   const [email, setEmail] = useState("")
@@ -22,15 +23,7 @@ export function ForgotPasswordForm() {
     setIsLoading(true)
 
     try {
-      // TODO: Replace with actual API call to Django backend
-      const response = await fetch("/api/auth/forgot-password", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
-      })
-
-      if (!response.ok) throw new Error("Failed to send reset email")
-
+      await forgotPassword({ email })
       setIsSubmitted(true)
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to send reset email")

@@ -1,0 +1,15 @@
+// lib/auth.ts
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
+interface LoginPayload {
+  email: string;
+  password: string;
+}
+
+interface RegisterPayload {
+  username: string;
+  email: string;
+  password: string;
+}
+
+// ---------- REGISTER ----------

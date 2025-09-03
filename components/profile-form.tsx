@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Separator } from "@/components/ui/separator"
 import { User, Mail, Phone, MapPin } from "lucide-react"
-import { useAuth } from "./auth-provider"
+import { useAuth } from "@/hooks/use-auth"
 
 export function ProfileForm() {
   const { user } = useAuth()

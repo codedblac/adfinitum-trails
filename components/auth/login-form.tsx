@@ -11,7 +11,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Separator } from "@/components/ui/separator"
 import { Eye, EyeOff, Mail, Lock } from "lucide-react"
 import Link from "next/link"
-import { useAuth } from "./auth-provider"
+import { useAuth } from "@/hooks/use-auth"   
 
 export function LoginForm() {
   const [formData, setFormData] = useState({

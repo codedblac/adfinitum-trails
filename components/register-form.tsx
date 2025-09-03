@@ -12,7 +12,7 @@ import { Separator } from "@/components/ui/separator"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Eye, EyeOff, Mail, Lock, User } from "lucide-react"
 import Link from "next/link"
-import { useAuth } from "./auth-provider"
+import { useAuth } from "@/hooks/use-auth"
 
 export function RegisterForm() {
   const [formData, setFormData] = useState({

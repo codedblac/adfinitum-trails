@@ -1,26 +1,35 @@
+// middleware.ts
 import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
 
-export function middleware(request: NextRequest) {
-  // Add CORS headers for API routes
-  if (request.nextUrl.pathname.startsWith("/api/")) {
-    const response = NextResponse.next()
-    response.headers.set("Access-Control-Allow-Origin", "*")
-    response.headers.set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
-    response.headers.set("Access-Control-Allow-Headers", "Content-Type, Authorization")
-    return response
+export function middleware(req: NextRequest) {
+  const token = req.cookies.get("access")?.value
+  const url = req.nextUrl.clone()
+
+  // Define protected and admin-only routes
+  const protectedRoutes = ["/dashboard", "/profile"]
+  const adminRoutes = ["/admin"]
+
+  // If accessing a protected route without a token → redirect
+  if (protectedRoutes.some((path) => url.pathname.startsWith(path))) {
+    if (!token) {
+      url.pathname = "/auth/login"
+      return NextResponse.redirect(url)
+    }
   }
 
-  // Protect admin routes
-  if (request.nextUrl.pathname.startsWith("/admin")) {
-    // In production, check for admin authentication here
-    // For now, just allow access
-    return NextResponse.next()
+  // If accessing admin routes but not admin → redirect
+  if (adminRoutes.some((path) => url.pathname.startsWith(path))) {
+    const role = req.cookies.get("role")?.value
+    if (role !== "admin") {
+      url.pathname = "/"
+      return NextResponse.redirect(url)
+    }
   }
 
   return NextResponse.next()
 }
 
 export const config = {
-  matcher: ["/api/:path*", "/admin/:path*"],
+  matcher: ["/dashboard/:path*", "/profile/:path*", "/admin/:path*"],
 }

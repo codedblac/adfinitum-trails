@@ -1,6 +1,5 @@
 "use client"
 
-import type React from "react"
 import { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -22,14 +21,20 @@ export function ForgotPasswordForm() {
     setIsLoading(true)
 
     try {
-      // TODO: Replace with actual API call to Django backend
-      const response = await fetch("/api/auth/forgot-password", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
-      })
+      const response = await fetch(
+        "https://adfinitum-backend.onrender.com/accounts/password-reset/",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email }),
+        }
+      )
 
-      if (!response.ok) throw new Error("Failed to send reset email")
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to send reset email")
+      }
 
       setIsSubmitted(true)
     } catch (err) {

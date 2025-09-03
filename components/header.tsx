@@ -13,12 +13,12 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { useAuth } from "@/components/auth/auth-provider"
+import { useAuth } from "@/hooks/use-auth"
 import { useRouter } from "next/navigation"
 
 export function Header() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
-  const [cartCount] = useState(3) // This will come from cart hook later
+  const [cartCount] = useState(3) 
   const { user, logout } = useAuth()
   const router = useRouter()
 
@@ -27,6 +27,7 @@ export function Header() {
     { name: "Phones", href: "/categories/phones" },
     { name: "Home Appliances", href: "/categories/appliances" },
     { name: "Financing", href: "/financing" },
+    { name: "About", href: "/about" },
     { name: "Contact", href: "/contact" },
   ]
 
@@ -75,7 +76,7 @@ export function Header() {
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="sm">
                     <User className="h-4 w-4 mr-2" />
-                    <span className="hidden sm:inline">{user.name}</span>
+                    <span className="hidden sm:inline">{user.username}</span>
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">

@@ -5,7 +5,7 @@ import { GeistMono } from "geist/font/mono"
 import "./globals.css"
 import { Header } from "@/components/navigation/header"
 import { Footer } from "@/components/navigation/footer"
-import { AuthProvider } from "@/components/auth/auth-provider"
+import { AuthProvider } from "@/hooks/use-auth"
 
 export const metadata: Metadata = {
   title: "Adfinitum Trails - Premium Electronics & Appliances",

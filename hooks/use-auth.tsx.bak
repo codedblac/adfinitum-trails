@@ -1,0 +1,101 @@
+"use client"
+
+import {
+  useState,
+  useEffect,
+  createContext,
+  useContext,
+  ReactNode,
+} from "react"
+import { loginUser, registerUser, getProfile, logoutUser } from "@/lib/auth"
+
+export interface User {
+  id: string
+  email: string
+  username: string
+  role?: "customer" | "admin" 
+}
+
+interface AuthContextType {
+  user: User | null
+  login: (email: string, password: string) => Promise<void>
+  register: (username: string, email: string, password: string) => Promise<void>
+  logout: () => void
+  isLoading: boolean
+}
+
+const AuthContext = createContext<AuthContextType | undefined>(undefined)
+
+export function useAuth() {
+  const context = useContext(AuthContext)
+  if (context === undefined) {
+    throw new Error("useAuth must be used within an AuthProvider")
+  }
+  return context
+}
+
+export function AuthProvider({ children }: { children: ReactNode }) {
+  const [user, setUser] = useState<User | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+
+  // Load profile on mount (SSR safe)
+  useEffect(() => {
+    if (typeof window === "undefined") return // prevent SSR errors
+    async function loadProfile() {
+      try {
+        const profile = await getProfile()
+        setUser(profile)
+      } catch {
+        setUser(null)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+    loadProfile()
+  }, [])
+
+  const login = async (email: string, password: string) => {
+    setIsLoading(true)
+    try {
+      await loginUser({ email, password })
+      const profile = await getProfile()
+      setUser(profile)
+    } catch (err) {
+      setUser(null)
+      throw err // let UI handle the error
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const register = async (fullName: string, email: string, password: string) => {
+  setIsLoading(true)
+  try {
+    await registerUser({
+      full_name: fullName,         
+      email,                       
+      password,                     
+      confirm_password: password,  
+    })
+    // Automatically log in after registration
+    await login(email, password)
+  } catch (err) {
+    setUser(null)
+    throw err
+  } finally {
+    setIsLoading(false)
+  }
+}
+
+
+  const logout = () => {
+    logoutUser()
+    setUser(null)
+  }
+
+  return (
+    <AuthContext.Provider value={{ user, login, register, logout, isLoading }}>
+      {children}
+    </AuthContext.Provider>
+  )
+}

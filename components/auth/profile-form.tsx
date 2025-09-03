@@ -9,7 +9,8 @@ import { Button } from "@/components/ui/button"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Separator } from "@/components/ui/separator"
 import { User, Mail, Phone, MapPin } from "lucide-react"
-import { useAuth } from "./auth-provider"
+import { useAuth } from "@/hooks/use-auth"
+import { updateProfile } from "@/lib/auth"
 
 export function ProfileForm() {
   const { user } = useAuth()
@@ -32,18 +33,7 @@ export function ProfileForm() {
     setIsLoading(true)
 
     try {
-      // TODO: Replace with actual API call to Django backend
-      const response = await fetch("/api/user/profile", {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("adfinitum-token")}`,
-        },
-        body: JSON.stringify(formData),
-      })
-
-      if (!response.ok) throw new Error("Failed to update profile")
-
+      await updateProfile(formData)   // ✅ call Django backend through lib/auth
       setSuccess("Profile updated successfully")
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to update profile")
