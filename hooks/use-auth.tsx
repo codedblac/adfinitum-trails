@@ -1,4 +1,3 @@
-// hooks/use-auth.tsx
 "use client"
 
 import {
@@ -24,7 +23,7 @@ export interface User {
   address?: string
   city?: string
   postalCode?: string
-  role?: string // keep flexible, backend may send dynamic roles
+  role?: string
 }
 
 interface AuthContextType {
@@ -47,15 +46,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
-  // Load profile on client mount if tokens exist
+  // ✅ Updated useEffect for auto-loading profile & handling expired/invalid tokens
   useEffect(() => {
     let mounted = true
+
     async function loadProfile() {
       try {
         const me = await getProfile()
         if (mounted) setUser(me)
       } catch {
-        if (mounted) setUser(null)
+        if (mounted) {
+          setUser(null)
+          logoutUser() // clear invalid tokens
+        }
       } finally {
         if (mounted) setIsLoading(false)
       }

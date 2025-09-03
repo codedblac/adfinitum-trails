@@ -11,7 +11,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Separator } from "@/components/ui/separator"
 import { Eye, EyeOff, Mail, Lock } from "lucide-react"
 import Link from "next/link"
-import { useAuth } from "@/hooks/use-auth"   
+import { useAuth } from "@/hooks/use-auth"
 
 export function LoginForm() {
   const [formData, setFormData] = useState({
@@ -30,8 +30,9 @@ export function LoginForm() {
 
     try {
       await login(formData.email, formData.password)
-      router.push("/") // Redirect to home after successful login
+      router.push("/") // redirect after success
     } catch (err) {
+      console.error(err)
       setError(err instanceof Error ? err.message : "Login failed")
     }
   }
@@ -54,6 +55,7 @@ export function LoginForm() {
             </Alert>
           )}
 
+          {/* Email */}
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
             <div className="relative">
@@ -70,6 +72,7 @@ export function LoginForm() {
             </div>
           </div>
 
+          {/* Password */}
           <div className="space-y-2">
             <Label htmlFor="password">Password</Label>
             <div className="relative">
@@ -95,18 +98,21 @@ export function LoginForm() {
             </div>
           </div>
 
+          {/* Forgot password */}
           <div className="flex items-center justify-between">
             <Link href="/auth/forgot-password" className="text-sm text-primary hover:underline">
               Forgot password?
             </Link>
           </div>
 
+          {/* Submit */}
           <Button type="submit" className="w-full" disabled={isLoading}>
             {isLoading ? "Signing in..." : "Sign In"}
           </Button>
 
           <Separator />
 
+          {/* Redirect to Register */}
           <div className="text-center text-sm">
             <span className="text-muted-foreground">Don't have an account? </span>
             <Link href="/auth/register" className="text-primary hover:underline">

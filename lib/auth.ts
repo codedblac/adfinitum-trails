@@ -38,28 +38,16 @@ export async function registerUser(data: RegisterPayload) {
 
 // ---------- LOGIN ----------
 export async function loginUser(data: LoginPayload) {
-  const res = await fetch(`${API_URL}/accounts/login/`, {
+  const tokens = await apiRequest("/accounts/login/", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
   });
 
-  if (!res.ok) {
-    let msg = "Login failed";
-    try {
-      const err = await res.json();
-      msg = err.detail || err.message || msg;
-    } catch {
-      // ignore JSON parse error
-    }
-    throw new Error(msg);
-  }
-
-  const tokens = await res.json();
   if (typeof window !== "undefined") {
     localStorage.setItem("access", tokens.access);
     localStorage.setItem("refresh", tokens.refresh);
   }
+
   return tokens;
 }
 

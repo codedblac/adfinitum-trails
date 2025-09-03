@@ -12,11 +12,11 @@ import { Separator } from "@/components/ui/separator"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Eye, EyeOff, Mail, Lock, User } from "lucide-react"
 import Link from "next/link"
-import { useAuth } from "@/hooks/use-auth"   // ✅ corrected import
+import { useAuth } from "@/hooks/use-auth"
 
 export function RegisterForm() {
   const [formData, setFormData] = useState({
-    name: "",
+    fullName: "",
     email: "",
     password: "",
     confirmPassword: "",
@@ -44,10 +44,11 @@ export function RegisterForm() {
     }
 
     try {
-      // ✅ Map `name` → `username` for backend
-      await register(formData.name, formData.email, formData.password)
-      router.push("/") // Redirect to home after successful registration
+      // Register user
+      await register(formData.fullName, formData.email, formData.password)
+      router.push("/") // redirect after success
     } catch (err) {
+      console.error(err)
       setError(err instanceof Error ? err.message : "Registration failed")
     }
   }
@@ -72,15 +73,15 @@ export function RegisterForm() {
 
           {/* Full Name */}
           <div className="space-y-2">
-            <Label htmlFor="name">Full Name</Label>
+            <Label htmlFor="fullName">Full Name</Label>
             <div className="relative">
               <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
               <Input
-                id="name"
+                id="fullName"
                 type="text"
                 placeholder="Enter your full name"
-                value={formData.name}
-                onChange={(e) => handleChange("name", e.target.value)}
+                value={formData.fullName}
+                onChange={(e) => handleChange("fullName", e.target.value)}
                 className="pl-10"
                 required
               />
