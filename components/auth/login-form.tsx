@@ -30,10 +30,10 @@ export function LoginForm() {
 
     try {
       await login(formData.email, formData.password)
-      router.push("/") // redirect after success
-    } catch (err) {
+      router.push("/") // ✅ redirect after login
+    } catch (err: any) {
       console.error(err)
-      setError(err instanceof Error ? err.message : "Login failed")
+      setError(err?.message || "Invalid email or password")
     }
   }
 
@@ -45,7 +45,7 @@ export function LoginForm() {
     <Card className="w-full max-w-md mx-auto">
       <CardHeader className="text-center">
         <CardTitle className="text-2xl">Welcome Back</CardTitle>
-        <p className="text-muted-foreground">Sign in to your account to continue</p>
+        <p className="text-muted-foreground">Sign in to continue your journey</p>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -59,15 +59,16 @@ export function LoginForm() {
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
             <div className="relative">
-              <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground h-4 w-4" />
               <Input
                 id="email"
                 type="email"
-                placeholder="Enter your email"
+                placeholder="you@example.com"
                 value={formData.email}
                 onChange={(e) => handleChange("email", e.target.value)}
                 className="pl-10"
                 required
+                disabled={isLoading}
               />
             </div>
           </div>
@@ -76,7 +77,7 @@ export function LoginForm() {
           <div className="space-y-2">
             <Label htmlFor="password">Password</Label>
             <div className="relative">
-              <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground h-4 w-4" />
               <Input
                 id="password"
                 type={showPassword ? "text" : "password"}
@@ -85,6 +86,7 @@ export function LoginForm() {
                 onChange={(e) => handleChange("password", e.target.value)}
                 className="pl-10 pr-10"
                 required
+                disabled={isLoading}
               />
               <Button
                 type="button"
@@ -92,15 +94,23 @@ export function LoginForm() {
                 size="sm"
                 className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
                 onClick={() => setShowPassword(!showPassword)}
+                tabIndex={-1}
               >
-                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                {showPassword ? (
+                  <EyeOff className="h-4 w-4" />
+                ) : (
+                  <Eye className="h-4 w-4" />
+                )}
               </Button>
             </div>
           </div>
 
           {/* Forgot password */}
           <div className="flex items-center justify-between">
-            <Link href="/auth/forgot-password" className="text-sm text-primary hover:underline">
+            <Link
+              href="/auth/forgot-password"
+              className="text-sm text-primary hover:underline"
+            >
               Forgot password?
             </Link>
           </div>
@@ -114,7 +124,7 @@ export function LoginForm() {
 
           {/* Redirect to Register */}
           <div className="text-center text-sm">
-            <span className="text-muted-foreground">Don't have an account? </span>
+            <span className="text-muted-foreground">Don’t have an account? </span>
             <Link href="/auth/register" className="text-primary hover:underline">
               Sign up
             </Link>

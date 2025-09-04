@@ -20,35 +20,40 @@ interface ForgotPasswordPayload {
 }
 
 interface UpdateProfilePayload {
-  name?: string;
+  full_name?: string;
   email?: string;
   phone?: string;
   address?: string;
   city?: string;
-  postalCode?: string;
+  postal_code?: string;
 }
 
 // ---------- REGISTER ----------
 export async function registerUser(data: RegisterPayload) {
   return apiRequest("/accounts/register/", {
     method: "POST",
-    body: JSON.stringify(data),
+    body: JSON.stringify({
+      full_name: data.full_name,
+      email: data.email,
+      password: data.password,
+      password2: data.confirm_password, // backend expects "password2"
+    }),
   });
 }
 
 // ---------- LOGIN ----------
 export async function loginUser(data: LoginPayload) {
-  const tokens = await apiRequest("/accounts/login/", {
+  const res = await apiRequest("/accounts/login/", {
     method: "POST",
     body: JSON.stringify(data),
   });
 
   if (typeof window !== "undefined") {
-    localStorage.setItem("access", tokens.access);
-    localStorage.setItem("refresh", tokens.refresh);
+    localStorage.setItem("access", res.tokens.access);
+    localStorage.setItem("refresh", res.tokens.refresh);
   }
 
-  return tokens;
+  return res; // contains { user, tokens }
 }
 
 // ---------- PROFILE ----------
@@ -59,8 +64,21 @@ export async function getProfile() {
 }
 
 // ---------- LOGOUT ----------
-export function logoutUser() {
+export async function logoutUser() {
   if (typeof window === "undefined") return;
+
+  const refresh = localStorage.getItem("refresh");
+  if (refresh) {
+    try {
+      await apiRequest("/accounts/logout/", {
+        method: "POST",
+        body: JSON.stringify({ refresh }),
+      });
+    } catch (err) {
+      console.error("Logout failed:", err);
+    }
+  }
+
   localStorage.removeItem("access");
   localStorage.removeItem("refresh");
 }

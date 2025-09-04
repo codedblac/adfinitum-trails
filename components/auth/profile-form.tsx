@@ -15,12 +15,12 @@ import { updateProfile } from "@/lib/auth"
 export function ProfileForm() {
   const { user } = useAuth()
   const [formData, setFormData] = useState({
-    name: user?.name || "",
+    full_name: user?.full_name || "",
     email: user?.email || "",
-    phone: "",
-    address: "",
-    city: "",
-    postalCode: "",
+    phone: user?.phone || "",
+    address: user?.address || "",
+    city: user?.city || "",
+    postal_code: user?.postal_code || "",
   })
   const [isLoading, setIsLoading] = useState(false)
   const [success, setSuccess] = useState("")
@@ -33,7 +33,7 @@ export function ProfileForm() {
     setIsLoading(true)
 
     try {
-      await updateProfile(formData)   // ✅ call Django backend through lib/auth
+      await updateProfile(formData) // ✅ matches Django fields
       setSuccess("Profile updated successfully")
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to update profile")
@@ -67,13 +67,13 @@ export function ProfileForm() {
 
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="name">Full Name</Label>
+              <Label htmlFor="full_name">Full Name</Label>
               <div className="relative">
                 <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                 <Input
-                  id="name"
-                  value={formData.name}
-                  onChange={(e) => handleChange("name", e.target.value)}
+                  id="full_name"
+                  value={formData.full_name}
+                  onChange={(e) => handleChange("full_name", e.target.value)}
                   className="pl-10"
                   required
                 />
@@ -131,14 +131,18 @@ export function ProfileForm() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="city">City</Label>
-                <Input id="city" value={formData.city} onChange={(e) => handleChange("city", e.target.value)} />
+                <Input
+                  id="city"
+                  value={formData.city}
+                  onChange={(e) => handleChange("city", e.target.value)}
+                />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="postalCode">Postal Code</Label>
+                <Label htmlFor="postal_code">Postal Code</Label>
                 <Input
-                  id="postalCode"
-                  value={formData.postalCode}
-                  onChange={(e) => handleChange("postalCode", e.target.value)}
+                  id="postal_code"
+                  value={formData.postal_code}
+                  onChange={(e) => handleChange("postal_code", e.target.value)}
                 />
               </div>
             </div>

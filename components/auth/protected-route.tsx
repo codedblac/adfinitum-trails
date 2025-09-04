@@ -1,7 +1,7 @@
 // components/auth/ProtectedRoute.tsx
 "use client"
 
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/hooks/use-auth"
 
@@ -22,23 +22,26 @@ export function ProtectedRoute({
 }: ProtectedRouteProps) {
   const { user, isLoading } = useAuth()
   const router = useRouter()
+  const [isRedirecting, setIsRedirecting] = useState(false)
 
   useEffect(() => {
     if (!isLoading) {
       if (!user) {
-        router.push(redirectTo)
+        setIsRedirecting(true)
+        router.replace(redirectTo)
         return
       }
 
-      if (allowedRoles && !allowedRoles.includes(user.role || "")) {
-        router.push("/") // fallback home if role not allowed
+      if (allowedRoles && !allowedRoles.includes(user?.role ?? "")) {
+        setIsRedirecting(true)
+        router.replace("/") // fallback to home if role not allowed
         return
       }
     }
   }, [user, isLoading, allowedRoles, redirectTo, router])
 
   // Show loading spinner or custom UI
-  if (isLoading) {
+  if (isLoading || isRedirecting) {
     return (
       loadingFallback || (
         <div className="flex items-center justify-center min-h-screen">
@@ -49,11 +52,13 @@ export function ProtectedRoute({
   }
 
   // Block unauthorized access (extra guard)
-  if (!user || (allowedRoles && !allowedRoles.includes(user.role || ""))) {
+  if (!user || (allowedRoles && !allowedRoles.includes(user?.role ?? ""))) {
     return (
       unauthorizedFallback || (
         <div className="flex items-center justify-center min-h-screen">
-          <p className="text-red-500">You don’t have permission to view this page.</p>
+          <p className="text-red-500">
+            You don’t have permission to view this page.
+          </p>
         </div>
       )
     )

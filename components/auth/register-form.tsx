@@ -16,10 +16,10 @@ import { useAuth } from "@/hooks/use-auth"
 
 export function RegisterForm() {
   const [formData, setFormData] = useState({
-    fullName: "",
+    full_name: "",
     email: "",
     password: "",
-    confirmPassword: "",
+    confirm_password: "",
     acceptTerms: false,
   })
   const [showPassword, setShowPassword] = useState(false)
@@ -33,7 +33,7 @@ export function RegisterForm() {
     e.preventDefault()
     setError("")
 
-    if (formData.password !== formData.confirmPassword) {
+    if (formData.password !== formData.confirm_password) {
       setError("Passwords do not match")
       return
     }
@@ -44,8 +44,7 @@ export function RegisterForm() {
     }
 
     try {
-      // Register user
-      await register(formData.fullName, formData.email, formData.password)
+      await register(formData.full_name, formData.email, formData.password)
       router.push("/") // redirect after success
     } catch (err) {
       console.error(err)
@@ -73,15 +72,15 @@ export function RegisterForm() {
 
           {/* Full Name */}
           <div className="space-y-2">
-            <Label htmlFor="fullName">Full Name</Label>
+            <Label htmlFor="full_name">Full Name</Label>
             <div className="relative">
               <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
               <Input
-                id="fullName"
+                id="full_name"
                 type="text"
                 placeholder="Enter your full name"
-                value={formData.fullName}
-                onChange={(e) => handleChange("fullName", e.target.value)}
+                value={formData.full_name}
+                onChange={(e) => handleChange("full_name", e.target.value)}
                 className="pl-10"
                 required
               />
@@ -133,15 +132,15 @@ export function RegisterForm() {
 
           {/* Confirm Password */}
           <div className="space-y-2">
-            <Label htmlFor="confirmPassword">Confirm Password</Label>
+            <Label htmlFor="confirm_password">Confirm Password</Label>
             <div className="relative">
               <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
               <Input
-                id="confirmPassword"
+                id="confirm_password"
                 type={showConfirmPassword ? "text" : "password"}
                 placeholder="Confirm your password"
-                value={formData.confirmPassword}
-                onChange={(e) => handleChange("confirmPassword", e.target.value)}
+                value={formData.confirm_password}
+                onChange={(e) => handleChange("confirm_password", e.target.value)}
                 className="pl-10 pr-10"
                 required
               />

@@ -15,14 +15,15 @@ import {
   logoutUser,
 } from "@/lib/auth"
 
+// ---------- TYPES ----------
 export interface User {
   id: string
-  name: string
+  full_name: string
   email: string
   phone?: string
   address?: string
   city?: string
-  postalCode?: string
+  postal_code?: string
   role?: string
 }
 
@@ -34,6 +35,7 @@ interface AuthContextType {
   isLoading: boolean
 }
 
+// ---------- CONTEXT ----------
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 export function useAuth() {
@@ -46,7 +48,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
-  // ✅ Updated useEffect for auto-loading profile & handling expired/invalid tokens
+  // Load profile on mount if token exists
   useEffect(() => {
     let mounted = true
 
@@ -57,7 +59,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } catch {
         if (mounted) {
           setUser(null)
-          logoutUser() // clear invalid tokens
+          logoutUser() // clear bad tokens
         }
       } finally {
         if (mounted) setIsLoading(false)
@@ -75,6 +77,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
+  // ---------- LOGIN ----------
   const login = useCallback(async (email: string, password: string) => {
     setIsLoading(true)
     try {
@@ -89,6 +92,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
+  // ---------- REGISTER ----------
   const register = useCallback(
     async (fullName: string, email: string, password: string) => {
       setIsLoading(true)
@@ -99,6 +103,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           password,
           confirm_password: password,
         })
+        // auto-login after register
         await login(email, password)
       } catch (err) {
         setUser(null)
@@ -110,15 +115,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [login]
   )
 
-  const logout = useCallback(() => {
-    logoutUser()
-    setUser(null)
+  // ---------- LOGOUT ----------
+  const logout = useCallback(async () => {
+    try {
+      await logoutUser()
+    } finally {
+      setUser(null)
+    }
   }, [])
 
   return (
-    <AuthContext.Provider
-      value={{ user, login, register, logout, isLoading }}
-    >
+    <AuthContext.Provider value={{ user, login, register, logout, isLoading }}>
       {children}
     </AuthContext.Provider>
   )

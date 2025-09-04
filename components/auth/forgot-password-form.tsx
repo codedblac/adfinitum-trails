@@ -25,8 +25,9 @@ export function ForgotPasswordForm() {
     try {
       await forgotPassword({ email })
       setIsSubmitted(true)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to send reset email")
+    } catch (err: any) {
+      console.error(err)
+      setError(err?.message || "Could not send reset link. Please try again.")
     } finally {
       setIsLoading(false)
     }
@@ -37,13 +38,16 @@ export function ForgotPasswordForm() {
       <Card className="w-full max-w-md mx-auto">
         <CardHeader className="text-center">
           <CardTitle className="text-2xl">Check Your Email</CardTitle>
-          <p className="text-muted-foreground">We've sent a password reset link to {email}</p>
+          <p className="text-muted-foreground">
+            If an account exists for <span className="font-medium">{email}</span>, 
+            you’ll receive a password reset link shortly.
+          </p>
         </CardHeader>
         <CardContent className="space-y-4">
           <Alert>
             <Mail className="h-4 w-4" />
             <AlertDescription>
-              If you don't see the email in your inbox, please check your spam folder.
+              Didn’t get it? Please check your spam folder.
             </AlertDescription>
           </Alert>
           <Button asChild className="w-full">
@@ -58,7 +62,9 @@ export function ForgotPasswordForm() {
     <Card className="w-full max-w-md mx-auto">
       <CardHeader className="text-center">
         <CardTitle className="text-2xl">Forgot Password</CardTitle>
-        <p className="text-muted-foreground">Enter your email to receive a password reset link</p>
+        <p className="text-muted-foreground">
+          Enter your email address and we’ll send you a reset link
+        </p>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -71,15 +77,16 @@ export function ForgotPasswordForm() {
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
             <div className="relative">
-              <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground h-4 w-4" />
               <Input
                 id="email"
                 type="email"
-                placeholder="Enter your email"
+                placeholder="you@example.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="pl-10"
                 required
+                disabled={isLoading}
               />
             </div>
           </div>
