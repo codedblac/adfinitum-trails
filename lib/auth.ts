@@ -48,12 +48,23 @@ export async function loginUser(data: LoginPayload) {
     body: JSON.stringify(data),
   });
 
-  if (typeof window !== "undefined") {
-    localStorage.setItem("access", res.tokens.access);
-    localStorage.setItem("refresh", res.tokens.refresh);
+  // Debug backend response
+  console.log("🔎 Login response:", res);
+
+  // Safely get tokens from response
+  const access = res.access || res.tokens?.access;
+  const refresh = res.refresh || res.tokens?.refresh;
+
+  if (!access || !refresh) {
+    throw new Error("Login response missing access or refresh token");
   }
 
-  return res; // contains { user, tokens }
+  if (typeof window !== "undefined") {
+    localStorage.setItem("access", access);
+    localStorage.setItem("refresh", refresh);
+  }
+
+  return res; // contains user info and tokens
 }
 
 // ---------- PROFILE ----------
