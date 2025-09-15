@@ -2,16 +2,22 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
+import Link from "next/link"
+import { toast } from "sonner"
+
 import { useCart } from "@/hooks/use-cart"
 import { CheckoutSteps } from "@/components/checkout/checkout-steps"
 import { ShippingForm } from "@/components/checkout/shipping-form"
-import { PaymentForm } from "@/components/checkout/payment-form"
 import { CartSummary } from "@/components/cart/cart-summary"
+import { MpesaPayment } from "@/components/payments/mpesa-payment"
+import { CardPayment } from "@/components/payments/card-payment"
+import { BankPayment } from "@/components/payments/bank-payment"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { ArrowLeft } from "lucide-react"
-import Link from "next/link"
+
+import { createOrder } from "@/lib/api"
 
 interface ShippingData {
   firstName: string
@@ -21,12 +27,12 @@ interface ShippingData {
   address: string
   city: string
   postalCode: string
-  deliveryMethod: string
+  deliveryMethod: "standard" | "express" | "pickup"
   notes: string
 }
 
 interface PaymentData {
-  method: string
+  method: "mpesa" | "card" | "bank"
   mpesaNumber?: string
   cardNumber?: string
   expiryDate?: string
@@ -41,29 +47,27 @@ export default function CheckoutPage() {
   const [shippingData, setShippingData] = useState<ShippingData | null>(null)
   const [paymentData, setPaymentData] = useState<PaymentData | null>(null)
   const [isProcessing, setIsProcessing] = useState(false)
+  const [paymentMethod, setPaymentMethod] = useState<PaymentData["method"] | "">("")
 
   const { items, totalItems, totalPrice, clearCart } = useCart()
   const router = useRouter()
 
-  // Redirect if cart is empty
   if (items.length === 0) {
     router.push("/cart")
     return null
   }
 
   const subtotal = totalPrice
-  const getShippingCost = () => {
-    if (!shippingData) return 500
-    switch (shippingData.deliveryMethod) {
-      case "express":
-        return 1500
-      case "pickup":
-        return 0
-      default:
-        return subtotal >= 10000 ? 0 : 500
-    }
-  }
-  const shipping = getShippingCost()
+  const shipping = shippingData
+    ? shippingData.deliveryMethod === "express"
+      ? 1500
+      : shippingData.deliveryMethod === "pickup"
+      ? 0
+      : subtotal >= 10000
+      ? 0
+      : 500
+    : 500
+
   const tax = Math.round(subtotal * 0.16)
   const total = subtotal + shipping + tax
 
@@ -77,38 +81,32 @@ export default function CheckoutPage() {
     setCurrentStep(3)
   }
 
-  const handlePaymentBack = () => {
-    setCurrentStep(1)
-  }
-
   const handlePlaceOrder = async () => {
-    setIsProcessing(true)
+    if (!shippingData || !paymentData) {
+      toast.error("Please complete shipping and payment details.")
+      return
+    }
 
+    setIsProcessing(true)
     try {
-      // TODO: Replace with actual API call to Django backend
       const orderData = {
-        items,
+        items: items.map((item) => ({
+          product_id: item.id,
+          quantity: item.quantity,
+          price: item.price,
+        })),
         shipping: shippingData,
         payment: paymentData,
         totals: { subtotal, shipping, tax, total },
       }
 
-      const response = await fetch("/api/orders", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(orderData),
-      })
-
-      if (!response.ok) throw new Error("Failed to place order")
-
-      const result = await response.json()
-
-      // Clear cart and redirect to success page
+      const result = await createOrder(orderData)
       clearCart()
-      router.push(`/orders/${result.orderId}/success`)
-    } catch (error) {
+      toast.success("Order placed successfully!")
+      router.push(`/orders/${result.id}/success`)
+    } catch (error: any) {
       console.error("Order placement failed:", error)
-      // Handle error (show toast, etc.)
+      toast.error(error.message || "Something went wrong placing your order.")
     } finally {
       setIsProcessing(false)
     }
@@ -116,9 +114,10 @@ export default function CheckoutPage() {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <div className="mb-8">
-        <Button variant="ghost" asChild className="mb-4">
-          <Link href="/cart">
+      {/* Header */}
+      <div className="mb-8 flex items-center justify-between">
+        <Button variant="ghost" asChild>
+          <Link href="/cart" className="flex items-center">
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back to Cart
           </Link>
@@ -129,15 +128,76 @@ export default function CheckoutPage() {
       <CheckoutSteps currentStep={currentStep} />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Main Form */}
         <div className="lg:col-span-2">
-          {currentStep === 1 && <ShippingForm onNext={handleShippingNext} initialData={shippingData || undefined} />}
-
-          {currentStep === 2 && (
-            <PaymentForm onNext={handlePaymentNext} onBack={handlePaymentBack} initialData={paymentData || undefined} />
+          {currentStep === 1 && (
+            <ShippingForm onNext={handleShippingNext} initialData={shippingData || undefined} />
           )}
 
-          {currentStep === 3 && (
+          {currentStep === 2 && (
             <div className="space-y-6">
+              <h3 className="text-xl font-semibold">Select Payment Method</h3>
+              <div className="flex flex-col gap-4">
+                <Button
+                  variant={paymentMethod === "mpesa" ? "default" : "outline"}
+                  onClick={() => setPaymentMethod("mpesa")}
+                >
+                  M-Pesa
+                </Button>
+                <Button
+                  variant={paymentMethod === "card" ? "default" : "outline"}
+                  onClick={() => setPaymentMethod("card")}
+                >
+                  Credit/Debit Card
+                </Button>
+                <Button
+                  variant={paymentMethod === "bank" ? "default" : "outline"}
+                  onClick={() => setPaymentMethod("bank")}
+                >
+                  Bank Transfer
+                </Button>
+              </div>
+
+              <div className="mt-6 space-y-4">
+                {paymentMethod === "mpesa" && (
+                  <MpesaPayment
+                    orderId={Date.now()}
+                    amount={total}
+                    onSuccess={(txnId) =>
+                      handlePaymentNext({ method: "mpesa", mpesaNumber: txnId })
+                    }
+                    onError={(err) => toast.error(err)}
+                  />
+                )}
+                {paymentMethod === "card" && (
+                  <CardPayment
+                    amount={total}
+                    onSuccess={(txnId) =>
+                      handlePaymentNext({ method: "card", cardNumber: txnId })
+                    }
+                    onError={(err) => toast.error(err)}
+                  />
+                )}
+                {paymentMethod === "bank" && (
+                  <BankPayment
+                    amount={total}
+                    orderNumber={Date.now().toString()}
+                    onConfirm={() => handlePaymentNext({ method: "bank", bankAccount: "manual" })}
+                  />
+                )}
+              </div>
+
+              <div className="flex gap-4 mt-6">
+                <Button variant="outline" onClick={() => setCurrentStep(1)} className="flex-1">
+                  Back to Shipping
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {currentStep === 3 && shippingData && paymentData && (
+            <div className="space-y-6">
+              {/* Order Review */}
               <Card>
                 <CardHeader>
                   <CardTitle>Order Review</CardTitle>
@@ -148,15 +208,15 @@ export default function CheckoutPage() {
                     <h4 className="font-medium mb-2">Shipping Information</h4>
                     <div className="text-sm text-muted-foreground space-y-1">
                       <p>
-                        {shippingData?.firstName} {shippingData?.lastName}
+                        {shippingData.firstName} {shippingData.lastName}
                       </p>
-                      <p>{shippingData?.email}</p>
-                      <p>{shippingData?.phone}</p>
-                      <p>{shippingData?.address}</p>
+                      <p>{shippingData.email}</p>
+                      <p>{shippingData.phone}</p>
+                      <p>{shippingData.address}</p>
                       <p>
-                        {shippingData?.city}, {shippingData?.postalCode}
+                        {shippingData.city}, {shippingData.postalCode}
                       </p>
-                      <p className="capitalize">{shippingData?.deliveryMethod} delivery</p>
+                      <p className="capitalize">{shippingData.deliveryMethod} delivery</p>
                     </div>
                   </div>
 
@@ -166,15 +226,19 @@ export default function CheckoutPage() {
                   <div>
                     <h4 className="font-medium mb-2">Payment Method</h4>
                     <div className="text-sm text-muted-foreground">
-                      {paymentData?.method === "mpesa" && <p>M-Pesa: {paymentData.mpesaNumber}</p>}
-                      {paymentData?.method === "card" && <p>Card ending in ****{paymentData.cardNumber?.slice(-4)}</p>}
-                      {paymentData?.method === "bank" && <p>Bank Transfer</p>}
+                      {paymentData.method === "mpesa" && (
+                        <p>M-Pesa Transaction: {paymentData.mpesaNumber}</p>
+                      )}
+                      {paymentData.method === "card" && (
+                        <p>Card Transaction ID: {paymentData.cardNumber}</p>
+                      )}
+                      {paymentData.method === "bank" && <p>Bank Transfer</p>}
                     </div>
                   </div>
 
                   <Separator />
 
-                  {/* Order Items */}
+                  {/* Items */}
                   <div>
                     <h4 className="font-medium mb-2">Order Items</h4>
                     <div className="space-y-2">
@@ -203,7 +267,7 @@ export default function CheckoutPage() {
           )}
         </div>
 
-        {/* Order Summary */}
+        {/* Cart Summary */}
         <div className="lg:col-span-1">
           <CartSummary
             subtotal={subtotal}
@@ -212,7 +276,7 @@ export default function CheckoutPage() {
             total={total}
             itemCount={totalItems}
             onCheckout={() => {}}
-            isCheckoutDisabled={true}
+            isCheckoutDisabled
           />
         </div>
       </div>

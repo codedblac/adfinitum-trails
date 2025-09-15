@@ -1,16 +1,16 @@
 // components/auth/ProtectedRoute.tsx
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, ReactNode } from "react"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/hooks/use-auth"
 
 interface ProtectedRouteProps {
-  children: React.ReactNode
-  allowedRoles?: string[] // e.g. ["admin", "customer"]
-  redirectTo?: string      // default redirect path
-  loadingFallback?: React.ReactNode // custom loading UI
-  unauthorizedFallback?: React.ReactNode // custom unauthorized UI
+  children: ReactNode
+  allowedRoles?: string[]                 // e.g., ["admin", "customer"]
+  redirectTo?: string                     // default redirect path
+  loadingFallback?: ReactNode             // optional custom loading UI
+  unauthorizedFallback?: ReactNode        // optional unauthorized UI
 }
 
 export function ProtectedRoute({
@@ -26,37 +26,39 @@ export function ProtectedRoute({
 
   useEffect(() => {
     if (!isLoading) {
+      // Not logged in → redirect
       if (!user) {
         setIsRedirecting(true)
         router.replace(redirectTo)
         return
       }
 
-      if (allowedRoles && !allowedRoles.includes(user?.role ?? "")) {
+      // Logged in but role not allowed → redirect to home
+      if (allowedRoles && !allowedRoles.includes(user.role ?? "")) {
         setIsRedirecting(true)
-        router.replace("/") // fallback to home if role not allowed
+        router.replace("/") // fallback
         return
       }
     }
   }, [user, isLoading, allowedRoles, redirectTo, router])
 
-  // Show loading spinner or custom UI
+  // Loading state
   if (isLoading || isRedirecting) {
     return (
       loadingFallback || (
         <div className="flex items-center justify-center min-h-screen">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
         </div>
       )
     )
   }
 
-  // Block unauthorized access (extra guard)
-  if (!user || (allowedRoles && !allowedRoles.includes(user?.role ?? ""))) {
+  // Extra unauthorized guard (should rarely hit due to redirect above)
+  if (!user || (allowedRoles && !allowedRoles.includes(user.role ?? ""))) {
     return (
       unauthorizedFallback || (
         <div className="flex items-center justify-center min-h-screen">
-          <p className="text-red-500">
+          <p className="text-red-500 text-center">
             You don’t have permission to view this page.
           </p>
         </div>

@@ -1,98 +1,91 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Slider } from "@/components/ui/slider"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { X } from "lucide-react"
+import { useState, useEffect } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Slider } from "@/components/ui/slider";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { X } from "lucide-react";
+import { useBrands, useCategories } from "@/hooks/use-products";
+import type { ProductFilters } from "@/hooks/use-products";
 
-interface FilterState {
-  brands: string[]
-  priceRange: [number, number]
-  categories: string[]
-  availability: string[]
-  rating: number
+// ---------- TYPES ----------
+export interface FilterState {
+  brands: string[];
+  priceRange: [number, number];
+  categories: string[];
+  availability: NonNullable<ProductFilters["availability"]>;
+  rating: number;
 }
 
 interface ProductFiltersProps {
-  filters: FilterState
-  onFiltersChange: (filters: FilterState) => void
-  onClearFilters: () => void
+  filters: FilterState;
+  onFiltersChange: (filters: FilterState) => void;
+  onClearFilters: () => void;
 }
 
-const brandOptions = [
-  "Apple",
-  "Samsung",
-  "LG",
-  "Sony",
-  "Huawei",
-  "Oppo",
-  "Tecno",
-  "Infinix",
-  "Canon",
-  "Nikon",
-  "Dyson",
-  "Bose",
-  "Nintendo",
-]
+// ---------- CONSTANTS ----------
+const DEFAULT_AVAILABILITY_OPTIONS: {
+  label: string;
+  value: "in-stock" | "pre-order" | "coming-soon";
+}[] = [
+  { label: "In Stock", value: "in-stock" },
+  { label: "Pre-order", value: "pre-order" },
+  { label: "Coming Soon", value: "coming-soon" },
+];
 
-const categoryOptions = [
-  "Smartphones",
-  "Tablets",
-  "Laptops",
-  "TVs",
-  "Audio",
-  "Cameras",
-  "Home Appliances",
-  "Gaming",
-  "Accessories",
-]
+// ---------- COMPONENT ----------
+export function ProductFilters({
+  filters,
+  onFiltersChange,
+  onClearFilters,
+}: ProductFiltersProps) {
+  const [priceRange, setPriceRange] = useState<FilterState["priceRange"]>(filters.priceRange);
 
-const availabilityOptions = ["In Stock", "Pre-order", "Coming Soon"]
+  const { brands, fetchBrands } = useBrands();
+  const { categories, fetchCategories } = useCategories();
 
-export function ProductFilters({ filters, onFiltersChange, onClearFilters }: ProductFiltersProps) {
-  const [priceRange, setPriceRange] = useState(filters.priceRange)
+  // Fetch dynamic brands and categories on mount
+  useEffect(() => {
+    fetchBrands();
+    fetchCategories();
+  }, [fetchBrands, fetchCategories]);
 
-  const handleBrandChange = (brand: string, checked: boolean) => {
-    const newBrands = checked ? [...filters.brands, brand] : filters.brands.filter((b) => b !== brand)
+  // Keep local priceRange in sync with props
+  useEffect(() => {
+    setPriceRange(filters.priceRange);
+  }, [filters.priceRange]);
 
-    onFiltersChange({ ...filters, brands: newBrands })
-  }
+  const handleMultiSelectChange = (
+    value: string,
+    field: keyof Omit<FilterState, "priceRange" | "rating">,
+    checked: boolean
+  ) => {
+    const current = filters[field] as string[];
+    const updated = checked ? [...current, value] : current.filter((v) => v !== value);
+    onFiltersChange({ ...filters, [field]: updated } as FilterState);
+  };
 
-  const handleCategoryChange = (category: string, checked: boolean) => {
-    const newCategories = checked ? [...filters.categories, category] : filters.categories.filter((c) => c !== category)
-
-    onFiltersChange({ ...filters, categories: newCategories })
-  }
-
-  const handleAvailabilityChange = (availability: string, checked: boolean) => {
-    const newAvailability = checked
-      ? [...filters.availability, availability]
-      : filters.availability.filter((a) => a !== availability)
-
-    onFiltersChange({ ...filters, availability: newAvailability })
-  }
-
-  const handlePriceChange = (value: [number, number]) => {
-    setPriceRange(value)
-    onFiltersChange({ ...filters, priceRange: value })
-  }
+  const handlePriceChange = (range: [number, number]) => {
+    setPriceRange(range);
+    onFiltersChange({ ...filters, priceRange: range });
+  };
 
   const handleRatingChange = (rating: number) => {
-    onFiltersChange({ ...filters, rating })
-  }
+    onFiltersChange({ ...filters, rating });
+  };
 
   const activeFiltersCount =
     filters.brands.length +
     filters.categories.length +
     filters.availability.length +
     (filters.rating > 0 ? 1 : 0) +
-    (filters.priceRange[0] > 0 || filters.priceRange[1] < 500000 ? 1 : 0)
+    (filters.priceRange[0] > 0 || filters.priceRange[1] < 500_000 ? 1 : 0);
 
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <h3 className="font-semibold">Filters</h3>
         {activeFiltersCount > 0 && (
@@ -105,18 +98,34 @@ export function ProductFilters({ filters, onFiltersChange, onClearFilters }: Pro
       {/* Active Filters */}
       {activeFiltersCount > 0 && (
         <div className="flex flex-wrap gap-2">
-          {filters.brands.map((brand) => (
-            <Badge key={brand} variant="secondary" className="gap-1">
-              {brand}
-              <X className="h-3 w-3 cursor-pointer" onClick={() => handleBrandChange(brand, false)} />
+          {filters.brands.map((b) => (
+            <Badge key={b} variant="secondary" className="gap-1">
+              {b}
+              <X
+                className="h-3 w-3 cursor-pointer"
+                onClick={() => handleMultiSelectChange(b, "brands", false)}
+              />
             </Badge>
           ))}
-          {filters.categories.map((category) => (
-            <Badge key={category} variant="secondary" className="gap-1">
-              {category}
-              <X className="h-3 w-3 cursor-pointer" onClick={() => handleCategoryChange(category, false)} />
+          {filters.categories.map((c) => (
+            <Badge key={c} variant="secondary" className="gap-1">
+              {c}
+              <X
+                className="h-3 w-3 cursor-pointer"
+                onClick={() => handleMultiSelectChange(c, "categories", false)}
+              />
             </Badge>
           ))}
+          {filters.availability.map((a) => (
+            <Badge key={a} variant="secondary" className="gap-1">
+              {DEFAULT_AVAILABILITY_OPTIONS.find((opt) => opt.value === a)?.label || a}
+              <X
+                className="h-3 w-3 cursor-pointer"
+                onClick={() => handleMultiSelectChange(a, "availability", false)}
+              />
+            </Badge>
+          ))}
+          {filters.rating > 0 && <Badge variant="secondary">{filters.rating}+ Stars</Badge>}
         </div>
       )}
 
@@ -129,12 +138,12 @@ export function ProductFilters({ filters, onFiltersChange, onClearFilters }: Pro
           <Slider
             value={priceRange}
             onValueChange={handlePriceChange}
-            max={500000}
+            max={500_000}
             min={0}
             step={1000}
             className="w-full"
           />
-          <div className="flex items-center justify-between text-sm text-muted-foreground">
+          <div className="flex justify-between text-sm text-muted-foreground">
             <span>KSh {priceRange[0].toLocaleString()}</span>
             <span>KSh {priceRange[1].toLocaleString()}</span>
           </div>
@@ -146,19 +155,25 @@ export function ProductFilters({ filters, onFiltersChange, onClearFilters }: Pro
         <CardHeader className="pb-3">
           <CardTitle className="text-sm">Brands</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-3">
-          {brandOptions.map((brand) => (
-            <div key={brand} className="flex items-center space-x-2">
-              <Checkbox
-                id={`brand-${brand}`}
-                checked={filters.brands.includes(brand)}
-                onCheckedChange={(checked) => handleBrandChange(brand, checked as boolean)}
-              />
-              <label htmlFor={`brand-${brand}`} className="text-sm cursor-pointer">
-                {brand}
-              </label>
-            </div>
-          ))}
+        <CardContent className="space-y-2">
+          {brands.length > 0 ? (
+            brands.map((brand) => (
+              <div key={brand.id} className="flex items-center space-x-2">
+                <Checkbox
+                  id={`brand-${brand.slug}`}
+                  checked={filters.brands.includes(brand.slug)}
+                  onCheckedChange={(checked) =>
+                    handleMultiSelectChange(brand.slug, "brands", checked as boolean)
+                  }
+                />
+                <label htmlFor={`brand-${brand.slug}`} className="text-sm cursor-pointer">
+                  {brand.name}
+                </label>
+              </div>
+            ))
+          ) : (
+            <p className="text-sm text-muted-foreground">Loading brands...</p>
+          )}
         </CardContent>
       </Card>
 
@@ -167,19 +182,25 @@ export function ProductFilters({ filters, onFiltersChange, onClearFilters }: Pro
         <CardHeader className="pb-3">
           <CardTitle className="text-sm">Categories</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-3">
-          {categoryOptions.map((category) => (
-            <div key={category} className="flex items-center space-x-2">
-              <Checkbox
-                id={`category-${category}`}
-                checked={filters.categories.includes(category)}
-                onCheckedChange={(checked) => handleCategoryChange(category, checked as boolean)}
-              />
-              <label htmlFor={`category-${category}`} className="text-sm cursor-pointer">
-                {category}
-              </label>
-            </div>
-          ))}
+        <CardContent className="space-y-2">
+          {categories.length > 0 ? (
+            categories.map((category) => (
+              <div key={category.id} className="flex items-center space-x-2">
+                <Checkbox
+                  id={`category-${category.slug}`}
+                  checked={filters.categories.includes(category.slug)}
+                  onCheckedChange={(checked) =>
+                    handleMultiSelectChange(category.slug, "categories", checked as boolean)
+                  }
+                />
+                <label htmlFor={`category-${category.slug}`} className="text-sm cursor-pointer">
+                  {category.name}
+                </label>
+              </div>
+            ))
+          ) : (
+            <p className="text-sm text-muted-foreground">Loading categories...</p>
+          )}
         </CardContent>
       </Card>
 
@@ -188,16 +209,18 @@ export function ProductFilters({ filters, onFiltersChange, onClearFilters }: Pro
         <CardHeader className="pb-3">
           <CardTitle className="text-sm">Availability</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-3">
-          {availabilityOptions.map((availability) => (
-            <div key={availability} className="flex items-center space-x-2">
+        <CardContent className="space-y-2">
+          {DEFAULT_AVAILABILITY_OPTIONS.map((item) => (
+            <div key={item.value} className="flex items-center space-x-2">
               <Checkbox
-                id={`availability-${availability}`}
-                checked={filters.availability.includes(availability)}
-                onCheckedChange={(checked) => handleAvailabilityChange(availability, checked as boolean)}
+                id={`availability-${item.value}`}
+                checked={filters.availability.includes(item.value)}
+                onCheckedChange={(checked) =>
+                  handleMultiSelectChange(item.value, "availability", checked as boolean)
+                }
               />
-              <label htmlFor={`availability-${availability}`} className="text-sm cursor-pointer">
-                {availability}
+              <label htmlFor={`availability-${item.value}`} className="text-sm cursor-pointer">
+                {item.label}
               </label>
             </div>
           ))}
@@ -209,7 +232,7 @@ export function ProductFilters({ filters, onFiltersChange, onClearFilters }: Pro
         <CardHeader className="pb-3">
           <CardTitle className="text-sm">Minimum Rating</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-3">
+        <CardContent className="space-y-2">
           {[4, 3, 2, 1].map((rating) => (
             <div key={rating} className="flex items-center space-x-2">
               <Checkbox
@@ -217,7 +240,7 @@ export function ProductFilters({ filters, onFiltersChange, onClearFilters }: Pro
                 checked={filters.rating === rating}
                 onCheckedChange={(checked) => handleRatingChange(checked ? rating : 0)}
               />
-              <label htmlFor={`rating-${rating}`} className="text-sm cursor-pointer flex items-center">
+              <label htmlFor={`rating-${rating}`} className="text-sm cursor-pointer">
                 {rating}+ Stars
               </label>
             </div>
@@ -225,5 +248,5 @@ export function ProductFilters({ filters, onFiltersChange, onClearFilters }: Pro
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }

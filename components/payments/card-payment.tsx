@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { CreditCard, Loader2, Lock } from "lucide-react"
+import { toast } from "sonner"
 
 interface CardPaymentProps {
   amount: number
@@ -22,64 +23,70 @@ export function CardPayment({ amount, onSuccess, onError }: CardPaymentProps) {
   })
   const [isProcessing, setIsProcessing] = useState(false)
 
-  const handleCardPayment = async () => {
-    if (!cardData.number || !cardData.expiry || !cardData.cvv || !cardData.name) {
-      onError("Please fill in all card details")
-      return
+  const formatCardNumber = (value: string) => {
+    const v = value.replace(/\D/g, "").slice(0, 16)
+    return v.replace(/(\d{4})(?=\d)/g, "$1 ")
+  }
+
+  const formatExpiry = (value: string) => {
+    const v = value.replace(/\D/g, "").slice(0, 4)
+    if (v.length > 2) return v.slice(0, 2) + "/" + v.slice(2)
+    return v
+  }
+
+  const validateCardData = () => {
+    if (!cardData.name || !cardData.number || !cardData.expiry || !cardData.cvv) {
+      toast.error("Please fill in all card details")
+      return false
     }
+    if (!/^\d{16}$/.test(cardData.number.replace(/\s/g, ""))) {
+      toast.error("Invalid card number")
+      return false
+    }
+    if (!/^\d{2}\/\d{2}$/.test(cardData.expiry)) {
+      toast.error("Invalid expiry date")
+      return false
+    }
+    if (!/^\d{3,4}$/.test(cardData.cvv)) {
+      toast.error("Invalid CVV")
+      return false
+    }
+    return true
+  }
+
+  const handleCardPayment = async () => {
+    if (!validateCardData()) return
 
     setIsProcessing(true)
     try {
-      // This would integrate with your Django backend payment processor
       const response = await fetch("/api/payments/card", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          card_number: cardData.number,
+          card_number: cardData.number.replace(/\s/g, ""),
           expiry_date: cardData.expiry,
           cvv: cardData.cvv,
           cardholder_name: cardData.name,
-          amount: amount,
+          amount,
         }),
       })
 
       const data = await response.json()
-
-      if (response.ok) {
+      if (response.ok && data.transaction_id) {
+        toast.success("Payment successful")
         onSuccess(data.transaction_id)
       } else {
-        onError(data.error || "Payment failed")
+        const msg = data.error || "Payment failed. Please try again."
+        toast.error(msg)
+        onError(msg)
       }
-    } catch (error) {
-      onError("Network error. Please try again.")
+    } catch (err: any) {
+      const msg = err?.message || "Network error. Please try again."
+      toast.error(msg)
+      onError(msg)
     } finally {
       setIsProcessing(false)
     }
-  }
-
-  const formatCardNumber = (value: string) => {
-    const v = value.replace(/\s+/g, "").replace(/[^0-9]/gi, "")
-    const matches = v.match(/\d{4,16}/g)
-    const match = (matches && matches[0]) || ""
-    const parts = []
-    for (let i = 0, len = match.length; i < len; i += 4) {
-      parts.push(match.substring(i, i + 4))
-    }
-    if (parts.length) {
-      return parts.join(" ")
-    } else {
-      return v
-    }
-  }
-
-  const formatExpiry = (value: string) => {
-    const v = value.replace(/\s+/g, "").replace(/[^0-9]/gi, "")
-    if (v.length >= 2) {
-      return v.substring(0, 2) + "/" + v.substring(2, 4)
-    }
-    return v
   }
 
   return (
@@ -100,6 +107,7 @@ export function CardPayment({ amount, onSuccess, onError }: CardPaymentProps) {
             value={cardData.name}
             onChange={(e) => setCardData({ ...cardData, name: e.target.value })}
             disabled={isProcessing}
+            aria-invalid={!cardData.name}
           />
         </div>
 
@@ -112,6 +120,7 @@ export function CardPayment({ amount, onSuccess, onError }: CardPaymentProps) {
             onChange={(e) => setCardData({ ...cardData, number: formatCardNumber(e.target.value) })}
             maxLength={19}
             disabled={isProcessing}
+            aria-invalid={!/^\d{16}$/.test(cardData.number.replace(/\s/g, ""))}
           />
         </div>
 
@@ -125,6 +134,7 @@ export function CardPayment({ amount, onSuccess, onError }: CardPaymentProps) {
               onChange={(e) => setCardData({ ...cardData, expiry: formatExpiry(e.target.value) })}
               maxLength={5}
               disabled={isProcessing}
+              aria-invalid={!/^\d{2}\/\d{2}$/.test(cardData.expiry)}
             />
           </div>
           <div className="space-y-2">
@@ -136,6 +146,7 @@ export function CardPayment({ amount, onSuccess, onError }: CardPaymentProps) {
               onChange={(e) => setCardData({ ...cardData, cvv: e.target.value.replace(/\D/g, "") })}
               maxLength={4}
               disabled={isProcessing}
+              aria-invalid={!/^\d{3,4}$/.test(cardData.cvv)}
             />
           </div>
         </div>
@@ -148,7 +159,7 @@ export function CardPayment({ amount, onSuccess, onError }: CardPaymentProps) {
 
         <Button
           onClick={handleCardPayment}
-          disabled={isProcessing || !cardData.number || !cardData.expiry || !cardData.cvv || !cardData.name}
+          disabled={isProcessing}
           className="w-full"
         >
           {isProcessing ? (

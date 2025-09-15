@@ -15,18 +15,18 @@ export function ForgotPasswordForm() {
   const [email, setEmail] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const [isSubmitted, setIsSubmitted] = useState(false)
-  const [error, setError] = useState("")
+  const [error, setError] = useState<string | null>(null)
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
-    setError("")
+    setError(null)
     setIsLoading(true)
 
     try {
       await forgotPassword({ email })
       setIsSubmitted(true)
     } catch (err: any) {
-      console.error(err)
+      console.error("Forgot password error:", err)
       setError(err?.message || "Could not send reset link. Please try again.")
     } finally {
       setIsLoading(false)
@@ -39,8 +39,7 @@ export function ForgotPasswordForm() {
         <CardHeader className="text-center">
           <CardTitle className="text-2xl">Check Your Email</CardTitle>
           <p className="text-muted-foreground">
-            If an account exists for <span className="font-medium">{email}</span>, 
-            you’ll receive a password reset link shortly.
+            If an account exists for <span className="font-medium">{email}</span>, you’ll receive a password reset link shortly.
           </p>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -96,7 +95,7 @@ export function ForgotPasswordForm() {
           </Button>
 
           <Button variant="ghost" asChild className="w-full">
-            <Link href="/auth/login">
+            <Link href="/auth/login" className="flex items-center justify-center">
               <ArrowLeft className="h-4 w-4 mr-2" />
               Back to Sign In
             </Link>

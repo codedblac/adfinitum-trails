@@ -1,105 +1,108 @@
-"use client"
+"use client";
 
-import { useState } from "react"
+import { useState } from "react";
+import {
+  getOrders as apiFetchOrders,
+  getOrderById as apiFetchOrderById,
+  cancelOrder as apiCancelOrder,
+  createOrder as apiCreateOrder,
+} from "@/lib/orders";
 
+// ------------------ ORDER INTERFACE ------------------
 export interface Order {
-  id: string
-  status: "pending" | "processing" | "shipped" | "delivered" | "cancelled"
-  total: number
+  id: number;
+  status: "pending" | "paid" | "shipped" | "delivered" | "cancelled";
+  total: number;
   items: Array<{
-    id: string
-    name: string
-    price: number
-    quantity: number
-    image: string
-  }>
+    id: number;
+    name: string;
+    price: number;
+    quantity: number;
+    image: string;
+  }>;
   shippingAddress: {
-    firstName: string
-    lastName: string
-    address: string
-    city: string
-    postalCode: string
-  }
-  createdAt: string
-  estimatedDelivery?: string
-  trackingNumber?: string
+    firstName: string;
+    lastName: string;
+    address: string;
+    city: string;
+    postalCode: string;
+  };
+  createdAt: string;
+  updatedAt: string;
+  estimatedDelivery?: string;
+  trackingNumber?: string;
 }
 
+// ------------------ HOOK ------------------
 export function useOrders() {
-  const [orders, setOrders] = useState<Order[]>([])
-  const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
+  // ------------------ Fetch all orders ------------------
   const fetchOrders = async () => {
-    setIsLoading(true)
-    setError(null)
-
+    setIsLoading(true);
+    setError(null);
     try {
-      // TODO: Replace with actual API call to Django backend
-      const response = await fetch("/api/orders", {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("adfinitum-token")}`,
-        },
-      })
-
-      if (!response.ok) throw new Error("Failed to fetch orders")
-
-      const data = await response.json()
-      setOrders(data.orders)
+      const data: Order[] = await apiFetchOrders();
+      setOrders(data);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "An error occurred")
+      setError(err instanceof Error ? err.message : "An error occurred while fetching orders");
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
-  const fetchOrderById = async (id: string) => {
-    setIsLoading(true)
-    setError(null)
-
+  // ------------------ Fetch order by ID ------------------
+  const fetchOrderById = async (id: number) => {
+    setIsLoading(true);
+    setError(null);
     try {
-      // TODO: Replace with actual API call
-      const response = await fetch(`/api/orders/${id}`, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("adfinitum-token")}`,
-        },
-      })
-
-      if (!response.ok) throw new Error("Order not found")
-
-      const data = await response.json()
-      return data.order
+      return await apiFetchOrderById(id) as Order;
     } catch (err) {
-      setError(err instanceof Error ? err.message : "An error occurred")
-      return null
+      setError(err instanceof Error ? err.message : "An error occurred while fetching order");
+      return null;
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
-  const cancelOrder = async (id: string) => {
-    setIsLoading(true)
-    setError(null)
-
+  // ------------------ Cancel an order ------------------
+  const cancelOrder = async (id: number) => {
+    setIsLoading(true);
+    setError(null);
     try {
-      // TODO: Replace with actual API call
-      const response = await fetch(`/api/orders/${id}/cancel`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("adfinitum-token")}`,
-        },
-      })
-
-      if (!response.ok) throw new Error("Failed to cancel order")
-
-      // Refresh orders
-      await fetchOrders()
+      await apiCancelOrder(id);
+      await fetchOrders(); // refresh after cancel
     } catch (err) {
-      setError(err instanceof Error ? err.message : "An error occurred")
+      setError(err instanceof Error ? err.message : "An error occurred while cancelling order");
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
+
+  // ------------------ Create new order ------------------
+  const createOrder = async (payload: {
+    cart_id: number;
+    shipping_address_id: number;
+    shipping_method_id: number;
+    email: string;
+    full_name: string;
+    phone_number: string;
+  }) => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const newOrder: Order = await apiCreateOrder(payload);
+      setOrders((prev) => [...prev, newOrder]);
+      return newOrder;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "An error occurred while creating order");
+      return null;
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return {
     orders,
@@ -108,5 +111,6 @@ export function useOrders() {
     fetchOrders,
     fetchOrderById,
     cancelOrder,
-  }
+    createOrder,
+  };
 }

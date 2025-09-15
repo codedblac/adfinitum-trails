@@ -13,6 +13,10 @@ interface RegisterPayload {
   email: string;
   password: string;
   confirm_password: string;
+  phone?: string;
+  address?: string;
+  city?: string;
+  postal_code?: string;
 }
 
 interface ForgotPasswordPayload {
@@ -21,7 +25,6 @@ interface ForgotPasswordPayload {
 
 interface UpdateProfilePayload {
   full_name?: string;
-  email?: string;
   phone?: string;
   address?: string;
   city?: string;
@@ -30,15 +33,29 @@ interface UpdateProfilePayload {
 
 // ---------- REGISTER ----------
 export async function registerUser(data: RegisterPayload) {
-  return apiRequest("/accounts/register/", {
+  const payload = {
+    full_name: data.full_name,
+    email: data.email,
+    password: data.password,
+    password2: data.confirm_password, // backend expects "password2"
+    phone: data.phone,
+    address: data.address,
+    city: data.city,
+    postal_code: data.postal_code,
+  };
+
+  const res = await apiRequest("/accounts/register/", {
     method: "POST",
-    body: JSON.stringify({
-      full_name: data.full_name,
-      email: data.email,
-      password: data.password,
-      password2: data.confirm_password, // backend expects "password2"
-    }),
+    body: JSON.stringify(payload),
   });
+
+  // Automatically store tokens if returned
+  if (res.access && res.refresh && typeof window !== "undefined") {
+    localStorage.setItem("access", res.access);
+    localStorage.setItem("refresh", res.refresh);
+  }
+
+  return res;
 }
 
 // ---------- LOGIN ----------
@@ -51,7 +68,6 @@ export async function loginUser(data: LoginPayload) {
   // Debug backend response
   console.log("🔎 Login response:", res);
 
-  // Safely get tokens from response
   const access = res.access || res.tokens?.access;
   const refresh = res.refresh || res.tokens?.refresh;
 
@@ -64,10 +80,10 @@ export async function loginUser(data: LoginPayload) {
     localStorage.setItem("refresh", refresh);
   }
 
-  return res; // contains user info and tokens
+  return res; // includes user info + tokens
 }
 
-// ---------- PROFILE ----------
+// ---------- GET PROFILE ----------
 export async function getProfile() {
   return apiRequest("/accounts/me/", {
     method: "GET",

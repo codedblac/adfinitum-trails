@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -14,36 +14,53 @@ import { updateProfile } from "@/lib/auth"
 
 export function ProfileForm() {
   const { user } = useAuth()
+
   const [formData, setFormData] = useState({
-    full_name: user?.full_name || "",
-    email: user?.email || "",
-    phone: user?.phone || "",
-    address: user?.address || "",
-    city: user?.city || "",
-    postal_code: user?.postal_code || "",
+    full_name: "",
+    email: "",
+    phone: "",
+    address: "",
+    city: "",
+    postal_code: "",
   })
+
   const [isLoading, setIsLoading] = useState(false)
   const [success, setSuccess] = useState("")
   const [error, setError] = useState("")
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  // Populate form with user data when available
+  useEffect(() => {
+    if (user) {
+      setFormData({
+        full_name: user.full_name || "",
+        email: user.email || "",
+        phone: user.phone || "",
+        address: user.address || "",
+        city: user.city || "",
+        postal_code: user.postal_code || "",
+      })
+    }
+  }, [user])
+
+  const handleChange = (field: keyof typeof formData, value: string) => {
+    setFormData((prev) => ({ ...prev, [field]: value }))
+  }
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setError("")
     setSuccess("")
     setIsLoading(true)
 
     try {
-      await updateProfile(formData) // ✅ matches Django fields
+      await updateProfile(formData)
       setSuccess("Profile updated successfully")
     } catch (err) {
+      console.error("Update profile error:", err)
       setError(err instanceof Error ? err.message : "Failed to update profile")
     } finally {
       setIsLoading(false)
     }
-  }
-
-  const handleChange = (field: keyof typeof formData, value: string) => {
-    setFormData((prev) => ({ ...prev, [field]: value }))
   }
 
   return (
@@ -65,11 +82,12 @@ export function ProfileForm() {
             </Alert>
           )}
 
+          {/* Personal Info */}
           <div className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="full_name">Full Name</Label>
               <div className="relative">
-                <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                <User className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground h-4 w-4" />
                 <Input
                   id="full_name"
                   value={formData.full_name}
@@ -83,7 +101,7 @@ export function ProfileForm() {
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <div className="relative">
-                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground h-4 w-4" />
                 <Input
                   id="email"
                   type="email"
@@ -98,7 +116,7 @@ export function ProfileForm() {
             <div className="space-y-2">
               <Label htmlFor="phone">Phone Number</Label>
               <div className="relative">
-                <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                <Phone className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground h-4 w-4" />
                 <Input
                   id="phone"
                   type="tel"
@@ -112,13 +130,14 @@ export function ProfileForm() {
 
           <Separator />
 
+          {/* Address Info */}
           <div className="space-y-4">
             <h3 className="font-medium">Address Information</h3>
 
             <div className="space-y-2">
               <Label htmlFor="address">Street Address</Label>
               <div className="relative">
-                <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground h-4 w-4" />
                 <Input
                   id="address"
                   value={formData.address}
@@ -137,6 +156,7 @@ export function ProfileForm() {
                   onChange={(e) => handleChange("city", e.target.value)}
                 />
               </div>
+
               <div className="space-y-2">
                 <Label htmlFor="postal_code">Postal Code</Label>
                 <Input

@@ -1,73 +1,155 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
+import {
+  getCart,
+  addCartItem,
+  updateCartItem,
+  removeCartItem,
+  clearCart as apiClearCart,
+  type Cart,
+  type CartItem as ApiCartItem,
+} from "@/lib/cart"
 
+// -------------------- TYPES --------------------
+
+// Frontend-friendly CartItem
 export interface CartItem {
-  id: string
+  id: number
   name: string
   price: number
   quantity: number
-  image: string
-  category: string
+  image?: string
+  category?: string
 }
 
+// Normalize backend CartItem → frontend CartItem
+function normalizeCartItem(item: ApiCartItem): CartItem {
+  return {
+    id: item.id,
+    name: item.product?.name ?? "Unnamed Product",
+    price: item.price,
+    quantity: item.quantity,
+    image: item.product?.image || "/placeholder.svg",
+    category: item.product?.category || "Uncategorized",
+  }
+}
+
+// -------------------- HOOK --------------------
 export function useCart() {
   const [items, setItems] = useState<CartItem[]>([])
   const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
-  // Load cart from localStorage on mount
+  // Load cart from API (with localStorage fallback)
   useEffect(() => {
-    const savedCart = localStorage.getItem("adfinitum-cart")
-    if (savedCart) {
-      setItems(JSON.parse(savedCart))
+    const fetchCart = async () => {
+      setIsLoading(true)
+      try {
+        const cart: Cart = await getCart()
+        const normalized = cart.items.map(normalizeCartItem)
+        setItems(normalized)
+        localStorage.setItem("adfinitum-cart", JSON.stringify(normalized))
+      } catch (err) {
+        console.error("Failed to load cart:", err)
+        setError(err instanceof Error ? err.message : "Failed to load cart")
+
+        // Fallback: load from localStorage
+        const savedCart = localStorage.getItem("adfinitum-cart")
+        if (savedCart) {
+          try {
+            setItems(JSON.parse(savedCart))
+          } catch {
+            localStorage.removeItem("adfinitum-cart")
+          }
+        }
+      } finally {
+        setIsLoading(false)
+      }
     }
+
+    fetchCart()
   }, [])
 
-  // Save cart to localStorage whenever items change
+  // Sync to localStorage whenever items change
   useEffect(() => {
     localStorage.setItem("adfinitum-cart", JSON.stringify(items))
   }, [items])
 
-  const addItem = (product: Omit<CartItem, "quantity">) => {
-    setItems((currentItems) => {
-      const existingItem = currentItems.find((item) => item.id === product.id)
+  // -------------------- CART OPERATIONS --------------------
 
-      if (existingItem) {
-        return currentItems.map((item) => (item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item))
+  const addItem = useCallback(
+    async (product: {
+      id: number
+      name: string
+      price: number
+      image?: string
+      category?: string
+      quantity?: number
+    }) => {
+      setIsLoading(true)
+      try {
+        const cart = await addCartItem(product.id, product.quantity ?? 1)
+        setItems(cart.items.map(normalizeCartItem))
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Failed to add item")
+      } finally {
+        setIsLoading(false)
       }
+    },
+    []
+  )
 
-      return [...currentItems, { ...product, quantity: 1 }]
-    })
-  }
-
-  const removeItem = (productId: string) => {
-    setItems((currentItems) => currentItems.filter((item) => item.id !== productId))
-  }
-
-  const updateQuantity = (productId: string, quantity: number) => {
-    if (quantity <= 0) {
-      removeItem(productId)
-      return
+  const updateQuantity = useCallback(async (itemId: number, quantity: number) => {
+    setIsLoading(true)
+    try {
+      const cart = await updateCartItem(itemId, quantity)
+      setItems(cart.items.map(normalizeCartItem))
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to update item")
+    } finally {
+      setIsLoading(false)
     }
+  }, [])
 
-    setItems((currentItems) => currentItems.map((item) => (item.id === productId ? { ...item, quantity } : item)))
-  }
+  const removeItem = useCallback(async (itemId: number) => {
+    setIsLoading(true)
+    try {
+      const cart = await removeCartItem(itemId)
+      setItems(cart.items.map(normalizeCartItem))
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to remove item")
+    } finally {
+      setIsLoading(false)
+    }
+  }, [])
 
-  const clearCart = () => {
-    setItems([])
-  }
+  const clearCart = useCallback(async () => {
+    setIsLoading(true)
+    try {
+      await apiClearCart()
+      setItems([])
+      localStorage.removeItem("adfinitum-cart")
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to clear cart")
+    } finally {
+      setIsLoading(false)
+    }
+  }, [])
 
+  // -------------------- DERIVED VALUES --------------------
   const totalItems = items.reduce((sum, item) => sum + item.quantity, 0)
   const totalPrice = items.reduce((sum, item) => sum + item.price * item.quantity, 0)
 
   return {
     items,
     addItem,
-    removeItem,
     updateQuantity,
+    removeItem,
     clearCart,
     totalItems,
     totalPrice,
     isLoading,
+    error,
   }
 }

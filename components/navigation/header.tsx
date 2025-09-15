@@ -25,7 +25,7 @@ export function Header() {
   const navigation = [
     { name: "Home", href: "/" },
     { name: "Phones", href: "/categories/phones" },
-    { name: "Home Appliances", href: "/categories/appliances" },
+    { name: "Appliances", href: "/categories/appliances" },
     { name: "Financing", href: "/financing" },
     { name: "Contact", href: "/contact" },
   ]
@@ -75,7 +75,7 @@ export function Header() {
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="sm">
                     <User className="h-4 w-4 mr-2" />
-                    <span className="hidden sm:inline">{user.name}</span>
+                    <span className="hidden sm:inline">{user.full_name}</span>
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">

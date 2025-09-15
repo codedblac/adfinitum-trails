@@ -1,8 +1,7 @@
 "use client"
 
 import type React from "react"
-
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -10,8 +9,10 @@ import { Button } from "@/components/ui/button"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { CreditCard, Smartphone, Building } from "lucide-react"
 
-interface PaymentData {
-  method: string
+export type PaymentMethod = "mpesa" | "card" | "bank"
+
+export interface PaymentData {
+  method: PaymentMethod
   mpesaNumber?: string
   cardNumber?: string
   expiryDate?: string
@@ -29,15 +30,31 @@ interface PaymentFormProps {
 
 export function PaymentForm({ onNext, onBack, initialData }: PaymentFormProps) {
   const [formData, setFormData] = useState<PaymentData>({
-    method: initialData?.method || "mpesa",
-    mpesaNumber: initialData?.mpesaNumber || "",
-    cardNumber: initialData?.cardNumber || "",
-    expiryDate: initialData?.expiryDate || "",
-    cvv: initialData?.cvv || "",
-    cardName: initialData?.cardName || "",
-    bankAccount: initialData?.bankAccount || "",
-    bankCode: initialData?.bankCode || "",
+    method: initialData?.method ?? "mpesa",
+    mpesaNumber: initialData?.mpesaNumber ?? "",
+    cardNumber: initialData?.cardNumber ?? "",
+    expiryDate: initialData?.expiryDate ?? "",
+    cvv: initialData?.cvv ?? "",
+    cardName: initialData?.cardName ?? "",
+    bankAccount: initialData?.bankAccount ?? "",
+    bankCode: initialData?.bankCode ?? "",
   })
+
+  // Clear irrelevant fields when switching payment method
+  useEffect(() => {
+    setFormData((prev) => {
+      switch (prev.method) {
+        case "mpesa":
+          return { ...prev, cardNumber: "", expiryDate: "", cvv: "", cardName: "", bankAccount: "", bankCode: "" }
+        case "card":
+          return { ...prev, mpesaNumber: "", bankAccount: "", bankCode: "" }
+        case "bank":
+          return { ...prev, mpesaNumber: "", cardNumber: "", expiryDate: "", cvv: "", cardName: "" }
+        default:
+          return prev
+      }
+    })
+  }, [formData.method])
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -50,55 +67,37 @@ export function PaymentForm({ onNext, onBack, initialData }: PaymentFormProps) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
+      {/* Payment Method Selection */}
       <Card>
         <CardHeader>
           <CardTitle>Payment Method</CardTitle>
         </CardHeader>
         <CardContent>
-          <RadioGroup value={formData.method} onValueChange={(value) => handleChange("method", value)}>
-            <div className="flex items-center space-x-2 p-4 border rounded-lg">
-              <RadioGroupItem value="mpesa" id="mpesa" />
-              <div className="flex items-center gap-3 flex-1">
-                <Smartphone className="h-5 w-5 text-green-600" />
-                <div>
-                  <Label htmlFor="mpesa" className="font-medium">
-                    M-Pesa
-                  </Label>
-                  <p className="text-sm text-muted-foreground">Pay with your mobile money</p>
+          <RadioGroup
+            value={formData.method}
+            onValueChange={(value: PaymentMethod) => handleChange("method", value)}
+          >
+            {[
+              { id: "mpesa", label: "M-Pesa", icon: <Smartphone className="h-5 w-5 text-green-600" />, description: "Pay with your mobile money" },
+              { id: "card", label: "Credit/Debit Card", icon: <CreditCard className="h-5 w-5 text-blue-600" />, description: "Visa, Mastercard accepted" },
+              { id: "bank", label: "Bank Transfer", icon: <Building className="h-5 w-5 text-purple-600" />, description: "Direct bank account transfer" },
+            ].map((method) => (
+              <div key={method.id} className="flex items-center space-x-2 p-4 border rounded-lg mb-2">
+                <RadioGroupItem value={method.id as PaymentMethod} id={method.id} />
+                <div className="flex items-center gap-3 flex-1">
+                  {method.icon}
+                  <div>
+                    <Label htmlFor={method.id} className="font-medium">{method.label}</Label>
+                    <p className="text-sm text-muted-foreground">{method.description}</p>
+                  </div>
                 </div>
               </div>
-            </div>
-
-            <div className="flex items-center space-x-2 p-4 border rounded-lg">
-              <RadioGroupItem value="card" id="card" />
-              <div className="flex items-center gap-3 flex-1">
-                <CreditCard className="h-5 w-5 text-blue-600" />
-                <div>
-                  <Label htmlFor="card" className="font-medium">
-                    Credit/Debit Card
-                  </Label>
-                  <p className="text-sm text-muted-foreground">Visa, Mastercard accepted</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="flex items-center space-x-2 p-4 border rounded-lg">
-              <RadioGroupItem value="bank" id="bank" />
-              <div className="flex items-center gap-3 flex-1">
-                <Building className="h-5 w-5 text-purple-600" />
-                <div>
-                  <Label htmlFor="bank" className="font-medium">
-                    Bank Transfer
-                  </Label>
-                  <p className="text-sm text-muted-foreground">Direct bank account transfer</p>
-                </div>
-              </div>
-            </div>
+            ))}
           </RadioGroup>
         </CardContent>
       </Card>
 
-      {/* M-Pesa Form */}
+      {/* M-Pesa */}
       {formData.method === "mpesa" && (
         <Card>
           <CardHeader>
@@ -115,95 +114,39 @@ export function PaymentForm({ onNext, onBack, initialData }: PaymentFormProps) {
                 onChange={(e) => handleChange("mpesaNumber", e.target.value)}
                 required
               />
-              <p className="text-sm text-muted-foreground">
-                You will receive an STK push notification to complete the payment
-              </p>
+              <p className="text-sm text-muted-foreground">You’ll receive an STK push notification to complete payment</p>
             </div>
           </CardContent>
         </Card>
       )}
 
-      {/* Card Form */}
+      {/* Card */}
       {formData.method === "card" && (
         <Card>
           <CardHeader>
             <CardTitle>Card Details</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="cardName">Cardholder Name</Label>
-              <Input
-                id="cardName"
-                value={formData.cardName}
-                onChange={(e) => handleChange("cardName", e.target.value)}
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="cardNumber">Card Number</Label>
-              <Input
-                id="cardNumber"
-                placeholder="1234 5678 9012 3456"
-                value={formData.cardNumber}
-                onChange={(e) => handleChange("cardNumber", e.target.value)}
-                required
-              />
-            </div>
+            <InputField label="Cardholder Name" id="cardName" value={formData.cardName} onChange={(v) => handleChange("cardName", v)} />
+            <InputField label="Card Number" id="cardNumber" placeholder="1234 5678 9012 3456" value={formData.cardNumber} onChange={(v) => handleChange("cardNumber", v)} />
             <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="expiryDate">Expiry Date</Label>
-                <Input
-                  id="expiryDate"
-                  placeholder="MM/YY"
-                  value={formData.expiryDate}
-                  onChange={(e) => handleChange("expiryDate", e.target.value)}
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="cvv">CVV</Label>
-                <Input
-                  id="cvv"
-                  placeholder="123"
-                  value={formData.cvv}
-                  onChange={(e) => handleChange("cvv", e.target.value)}
-                  required
-                />
-              </div>
+              <InputField label="Expiry Date" id="expiryDate" placeholder="MM/YY" value={formData.expiryDate} onChange={(v) => handleChange("expiryDate", v)} />
+              <InputField label="CVV" id="cvv" placeholder="123" value={formData.cvv} onChange={(v) => handleChange("cvv", v)} />
             </div>
           </CardContent>
         </Card>
       )}
 
-      {/* Bank Transfer Form */}
+      {/* Bank */}
       {formData.method === "bank" && (
         <Card>
           <CardHeader>
             <CardTitle>Bank Transfer Details</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="bankAccount">Account Number</Label>
-              <Input
-                id="bankAccount"
-                value={formData.bankAccount}
-                onChange={(e) => handleChange("bankAccount", e.target.value)}
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="bankCode">Bank Code</Label>
-              <Input
-                id="bankCode"
-                placeholder="e.g., 01 for KCB"
-                value={formData.bankCode}
-                onChange={(e) => handleChange("bankCode", e.target.value)}
-                required
-              />
-            </div>
-            <p className="text-sm text-muted-foreground">
-              You will receive bank details to complete the transfer after placing your order
-            </p>
+            <InputField label="Account Number" id="bankAccount" value={formData.bankAccount} onChange={(v) => handleChange("bankAccount", v)} />
+            <InputField label="Bank Code" id="bankCode" placeholder="e.g. 01 for KCB" value={formData.bankCode} onChange={(v) => handleChange("bankCode", v)} />
+            <p className="text-sm text-muted-foreground">Bank details will be provided after placing your order</p>
           </CardContent>
         </Card>
       )}
@@ -212,10 +155,36 @@ export function PaymentForm({ onNext, onBack, initialData }: PaymentFormProps) {
         <Button type="button" variant="outline" onClick={onBack} className="flex-1 bg-transparent">
           Back to Shipping
         </Button>
-        <Button type="submit" className="flex-1">
-          Review Order
-        </Button>
+        <Button type="submit" className="flex-1">Review Order</Button>
       </div>
     </form>
+  )
+}
+
+// Reusable input field component
+function InputField({
+  label,
+  id,
+  value,
+  onChange,
+  placeholder,
+}: {
+  label: string
+  id: string
+  value: string
+  onChange: (v: string) => void
+  placeholder?: string
+}) {
+  return (
+    <div className="space-y-2">
+      <Label htmlFor={id}>{label}</Label>
+      <Input
+        id={id}
+        placeholder={placeholder}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        required
+      />
+    </div>
   )
 }

@@ -40,7 +40,7 @@ export default function AccountPage() {
               <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
                 <User className="h-8 w-8 text-primary" />
               </div>
-              <CardTitle>{user.name}</CardTitle>
+              <CardTitle>{user.full_name}</CardTitle>
               <p className="text-sm text-muted-foreground">{user.email}</p>
               <Badge variant={user.role === "admin" ? "default" : "secondary"} className="mt-2">
                 {user.role === "admin" ? "Administrator" : "Customer"}

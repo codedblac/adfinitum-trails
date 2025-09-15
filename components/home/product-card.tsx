@@ -4,35 +4,29 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Star, ShoppingCart } from "lucide-react"
-
-interface Product {
-  id: string
-  name: string
-  price: number
-  originalPrice?: number
-  image: string
-  rating: number
-  reviewCount: number
-  category: string
-  isNew?: boolean
-  isTrending?: boolean
-}
+import { Product } from "@/lib/products"
 
 interface ProductCardProps {
-  product: Product
+  product: Product & {
+    image?: string // normalized single image for card
+    originalPrice?: number
+    isNew?: boolean
+    isTrending?: boolean
+  }
 }
 
 export function ProductCard({ product }: ProductCardProps) {
-  const discount = product.originalPrice
-    ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
-    : 0
+  const discount =
+    product.originalPrice && product.originalPrice > product.price
+      ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
+      : 0
 
   return (
     <Card className="group hover:shadow-lg transition-shadow duration-300">
       <CardContent className="p-0">
         <div className="relative aspect-square overflow-hidden rounded-t-lg">
           <Image
-            src={product.image || "/placeholder.svg"}
+            src={product.image || product.images?.[0] || "/placeholder.svg"}
             alt={product.name}
             fill
             className="object-cover group-hover:scale-105 transition-transform duration-300"
@@ -54,7 +48,9 @@ export function ProductCard({ product }: ProductCardProps) {
 
         <div className="p-4 space-y-3">
           <div className="space-y-1">
-            <p className="text-sm text-muted-foreground">{product.category}</p>
+            <p className="text-sm text-muted-foreground">
+              {typeof product.category === "string" ? product.category : product.category?.name}
+            </p>
             <h3 className="font-semibold text-balance line-clamp-2">
               <Link href={`/products/${product.id}`} className="hover:text-primary transition-colors">
                 {product.name}
@@ -68,12 +64,12 @@ export function ProductCard({ product }: ProductCardProps) {
                 <Star
                   key={i}
                   className={`h-4 w-4 ${
-                    i < Math.floor(product.rating) ? "fill-yellow-400 text-yellow-400" : "text-gray-300"
+                    i < Math.floor(product.rating || 0) ? "fill-yellow-400 text-yellow-400" : "text-gray-300"
                   }`}
                 />
               ))}
             </div>
-            <span className="text-sm text-muted-foreground">({product.reviewCount})</span>
+            <span className="text-sm text-muted-foreground">({product.reviewCount || 0})</span>
           </div>
 
           <div className="flex items-center justify-between">

@@ -28,32 +28,37 @@ export function CartSummary({
   const freeShippingThreshold = 10000
   const remainingForFreeShipping = Math.max(0, freeShippingThreshold - subtotal)
 
+  const formatCurrency = (amount: number) =>
+    `KSh ${amount.toLocaleString("en-KE")}`
+
   return (
-    <Card className="sticky top-4">
+    <Card className="sticky top-4" role="complementary" aria-label="Cart summary">
       <CardHeader>
         <CardTitle>Order Summary</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
+        {/* Price Breakdown */}
         <div className="space-y-2">
           <div className="flex justify-between">
-            <span>Subtotal ({itemCount} items)</span>
-            <span>KSh {subtotal.toLocaleString()}</span>
+            <span>Subtotal ({itemCount} {itemCount === 1 ? "item" : "items"})</span>
+            <span>{formatCurrency(subtotal)}</span>
           </div>
           <div className="flex justify-between">
             <span>Shipping</span>
-            <span>{shipping === 0 ? "Free" : `KSh ${shipping.toLocaleString()}`}</span>
+            <span>{shipping === 0 ? "Free" : formatCurrency(shipping)}</span>
           </div>
           <div className="flex justify-between">
             <span>Tax</span>
-            <span>KSh {tax.toLocaleString()}</span>
+            <span>{formatCurrency(tax)}</span>
           </div>
         </div>
 
         <Separator />
 
+        {/* Grand Total */}
         <div className="flex justify-between font-semibold text-lg">
           <span>Total</span>
-          <span>KSh {total.toLocaleString()}</span>
+          <span>{formatCurrency(total)}</span>
         </div>
 
         {/* Free Shipping Banner */}
@@ -64,7 +69,7 @@ export function CartSummary({
               <span className="text-sm font-medium">Free Shipping Available</span>
             </div>
             <p className="text-xs text-muted-foreground">
-              Add KSh {remainingForFreeShipping.toLocaleString()} more to qualify for free shipping
+              Add {formatCurrency(remainingForFreeShipping)} more to qualify for free shipping
             </p>
           </div>
         )}
@@ -81,10 +86,17 @@ export function CartSummary({
           </div>
         </div>
 
-        <Button className="w-full" size="lg" onClick={onCheckout} disabled={isCheckoutDisabled}>
+        {/* Checkout Button */}
+        <Button
+          className="w-full"
+          size="lg"
+          onClick={onCheckout}
+          disabled={isCheckoutDisabled}
+        >
           Proceed to Checkout
         </Button>
 
+        {/* Return Policy */}
         <div className="text-center">
           <Badge variant="outline" className="text-xs">
             30-day return policy

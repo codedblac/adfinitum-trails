@@ -1,27 +1,63 @@
 "use client"
 
+import { useEffect, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts"
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+} from "recharts"
+import { fetchSalesAnalytics, fetchCategoryAnalytics } from "@/lib/api"
 
-const salesData = [
-  { name: "Jan", sales: 65000, orders: 45 },
-  { name: "Feb", sales: 85000, orders: 62 },
-  { name: "Mar", sales: 95000, orders: 78 },
-  { name: "Apr", sales: 125000, orders: 89 },
-  { name: "May", sales: 145000, orders: 102 },
-  { name: "Jun", sales: 165000, orders: 118 },
-]
+type SalesData = {
+  name: string
+  sales: number
+  orders: number
+}
 
-const categoryData = [
-  { name: "Smartphones", value: 45, color: "#0088FE" },
-  { name: "TVs", value: 25, color: "#00C49F" },
-  { name: "Home Appliances", value: 20, color: "#FFBB28" },
-  { name: "Audio", value: 10, color: "#FF8042" },
-]
+type CategoryData = {
+  name: string
+  value: number
+  color: string
+}
 
 export function AnalyticsCharts() {
+  const [salesData, setSalesData] = useState<SalesData[]>([])
+  const [categoryData, setCategoryData] = useState<CategoryData[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchAnalytics = async () => {
+      try {
+        // 🔹 Fetch monthly sales data
+        const sales: SalesData[] = await fetchSalesAnalytics()
+        setSalesData(sales || [])
+
+        // 🔹 Fetch category-wise sales data
+        const categories: CategoryData[] = await fetchCategoryAnalytics()
+        setCategoryData(categories || [])
+      } catch (err) {
+        console.error("Failed to fetch analytics:", err)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchAnalytics()
+  }, [])
+
+  if (loading) return <p>Loading analytics...</p>
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {/* Monthly Sales Bar Chart */}
       <Card>
         <CardHeader>
           <CardTitle>Monthly Sales</CardTitle>
@@ -34,7 +70,9 @@ export function AnalyticsCharts() {
               <YAxis />
               <Tooltip
                 formatter={(value, name) => [
-                  name === "sales" ? `KSh ${Number(value).toLocaleString()}` : value,
+                  name === "sales"
+                    ? `KSh ${Number(value).toLocaleString()}`
+                    : value,
                   name === "sales" ? "Sales" : "Orders",
                 ]}
               />
@@ -44,6 +82,7 @@ export function AnalyticsCharts() {
         </CardContent>
       </Card>
 
+      {/* Sales by Category Pie Chart */}
       <Card>
         <CardHeader>
           <CardTitle>Sales by Category</CardTitle>
@@ -56,7 +95,9 @@ export function AnalyticsCharts() {
                 cx="50%"
                 cy="50%"
                 labelLine={false}
-                label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                label={({ name, percent }) =>
+                  `${name} ${(percent ?? 0 * 100).toFixed(0)}%`
+                }
                 outerRadius={80}
                 fill="#8884d8"
                 dataKey="value"
@@ -65,7 +106,13 @@ export function AnalyticsCharts() {
                   <Cell key={`cell-${index}`} fill={entry.color} />
                 ))}
               </Pie>
-              <Tooltip />
+              <Tooltip
+                formatter={(value, name) =>
+                  name === "value"
+                    ? `KSh ${Number(value).toLocaleString()}`
+                    : value
+                }
+              />
             </PieChart>
           </ResponsiveContainer>
         </CardContent>

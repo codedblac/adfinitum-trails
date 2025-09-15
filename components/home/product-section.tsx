@@ -2,28 +2,29 @@ import { ProductCard } from "./product-card"
 import { Button } from "@/components/ui/button"
 import { ArrowRight } from "lucide-react"
 import Link from "next/link"
+import { Product } from "@/lib/products"
+import { Skeleton } from "@/components/ui/skeleton" // make sure you have this
 
-interface Product {
-  id: string
-  name: string
-  price: number
-  originalPrice?: number
-  image: string
-  rating: number
-  reviewCount: number
-  category: string
-  isNew?: boolean
-  isTrending?: boolean
-}
-
-interface ProductSectionProps {
+export interface ProductSectionProps {
   title: string
   subtitle?: string
-  products: Product[]
+  products: (Product & {
+    image?: string
+    originalPrice?: number
+    isNew?: boolean
+    isTrending?: boolean
+  })[]
   viewAllHref?: string
+  loading?: boolean // ✅ added
 }
 
-export function ProductSection({ title, subtitle, products, viewAllHref }: ProductSectionProps) {
+export function ProductSection({
+  title,
+  subtitle,
+  products,
+  viewAllHref,
+  loading = false, // ✅ default false
+}: ProductSectionProps) {
   return (
     <section className="space-y-8">
       <div className="flex items-center justify-between">
@@ -41,9 +42,17 @@ export function ProductSection({ title, subtitle, products, viewAllHref }: Produ
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        {products.map((product) => (
-          <ProductCard key={product.id} product={product} />
-        ))}
+        {loading
+          ? Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="space-y-4">
+                <Skeleton className="h-48 w-full rounded-xl" />
+                <Skeleton className="h-4 w-3/4" />
+                <Skeleton className="h-4 w-1/2" />
+              </div>
+            ))
+          : products.map((product) => (
+              <ProductCard key={product.id} product={product} />
+            ))}
       </div>
     </section>
   )

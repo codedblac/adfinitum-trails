@@ -33,19 +33,20 @@ export function RegisterForm() {
     e.preventDefault()
     setError("")
 
+    // Validation
     if (formData.password !== formData.confirm_password) {
       setError("Passwords do not match")
       return
     }
-
     if (!formData.acceptTerms) {
       setError("Please accept the terms and conditions")
       return
     }
 
     try {
+      // Register and auto-login
       await register(formData.full_name, formData.email, formData.password)
-      router.push("/") // redirect after success
+      router.push("/") // redirect after successful login
     } catch (err) {
       console.error(err)
       setError(err instanceof Error ? err.message : "Registration failed")
@@ -74,7 +75,7 @@ export function RegisterForm() {
           <div className="space-y-2">
             <Label htmlFor="full_name">Full Name</Label>
             <div className="relative">
-              <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+              <User className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground h-4 w-4" />
               <Input
                 id="full_name"
                 type="text"
@@ -91,7 +92,7 @@ export function RegisterForm() {
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
             <div className="relative">
-              <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground h-4 w-4" />
               <Input
                 id="email"
                 type="email"
@@ -108,7 +109,7 @@ export function RegisterForm() {
           <div className="space-y-2">
             <Label htmlFor="password">Password</Label>
             <div className="relative">
-              <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground h-4 w-4" />
               <Input
                 id="password"
                 type={showPassword ? "text" : "password"}
@@ -134,7 +135,7 @@ export function RegisterForm() {
           <div className="space-y-2">
             <Label htmlFor="confirm_password">Confirm Password</Label>
             <div className="relative">
-              <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground h-4 w-4" />
               <Input
                 id="confirm_password"
                 type={showConfirmPassword ? "text" : "password"}

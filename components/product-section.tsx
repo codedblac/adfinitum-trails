@@ -21,9 +21,16 @@ interface ProductSectionProps {
   subtitle?: string
   products: Product[]
   viewAllHref?: string
+  loading?: boolean // ✅ added
 }
 
-export function ProductSection({ title, subtitle, products, viewAllHref }: ProductSectionProps) {
+export function ProductSection({
+  title,
+  subtitle,
+  products,
+  viewAllHref,
+  loading = false, // ✅ default value
+}: ProductSectionProps) {
   return (
     <section className="space-y-8">
       <div className="flex items-center justify-between">
@@ -40,11 +47,23 @@ export function ProductSection({ title, subtitle, products, viewAllHref }: Produ
         )}
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        {products.map((product) => (
-          <ProductCard key={product.id} product={product} />
-        ))}
-      </div>
+      {/* ✅ Show skeletons if loading */}
+      {loading ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div
+              key={i}
+              className="h-60 bg-muted animate-pulse rounded-lg"
+            />
+          ))}
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          {products.map((product) => (
+            <ProductCard key={product.id} product={product} />
+          ))}
+        </div>
+      )}
     </section>
   )
 }

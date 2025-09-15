@@ -1,6 +1,6 @@
 "use client"
 
-import { StatsCard } from "@/components/admin/stats-cards"
+import { StatsCard } from "@/components/admin/stats-card"
 import { RecentOrders } from "@/components/admin/recent-orders"
 import { SalesChart } from "@/components/admin/sales-chart"
 import { ProtectedRoute } from "@/components/auth/protected-route"
@@ -8,11 +8,14 @@ import { DollarSign, Package, ShoppingCart, Users } from "lucide-react"
 
 export default function AdminDashboard() {
   return (
-    <ProtectedRoute requireAdmin>
+    <ProtectedRoute allowedRoles={["admin"]}>
       <div className="space-y-8">
+        {/* Page Header */}
         <div>
           <h1 className="text-3xl font-bold">Dashboard</h1>
-          <p className="text-muted-foreground">Welcome back! Here's what's happening with your store.</p>
+          <p className="text-muted-foreground">
+            Welcome back! Here&apos;s what&apos;s happening with your store.
+          </p>
         </div>
 
         {/* Stats Cards */}
@@ -47,7 +50,7 @@ export default function AdminDashboard() {
           />
         </div>
 
-        {/* Charts and Recent Orders */}
+        {/* Charts & Recent Orders */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <SalesChart />
           <RecentOrders />

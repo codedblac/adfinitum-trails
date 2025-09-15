@@ -14,25 +14,22 @@ import Link from "next/link"
 import { useAuth } from "@/hooks/use-auth"
 
 export function LoginForm() {
-  const [formData, setFormData] = useState({
-    email: "",
-    password: "",
-  })
+  const [formData, setFormData] = useState({ email: "", password: "" })
   const [showPassword, setShowPassword] = useState(false)
-  const [error, setError] = useState("")
+  const [error, setError] = useState<string | null>(null)
 
   const { login, isLoading } = useAuth()
   const router = useRouter()
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
-    setError("")
+    setError(null)
 
     try {
       await login(formData.email, formData.password)
-      router.push("/") // ✅ redirect after login
+      router.push("/") // redirect after login
     } catch (err: any) {
-      console.error(err)
+      console.error("Login error:", err)
       setError(err?.message || "Invalid email or password")
     }
   }
@@ -96,21 +93,14 @@ export function LoginForm() {
                 onClick={() => setShowPassword(!showPassword)}
                 tabIndex={-1}
               >
-                {showPassword ? (
-                  <EyeOff className="h-4 w-4" />
-                ) : (
-                  <Eye className="h-4 w-4" />
-                )}
+                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </Button>
             </div>
           </div>
 
           {/* Forgot password */}
           <div className="flex items-center justify-between">
-            <Link
-              href="/auth/forgot-password"
-              className="text-sm text-primary hover:underline"
-            >
+            <Link href="/auth/forgot-password" className="text-sm text-primary hover:underline">
               Forgot password?
             </Link>
           </div>

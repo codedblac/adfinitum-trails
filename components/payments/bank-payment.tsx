@@ -71,84 +71,33 @@ export function BankPayment({ amount, orderNumber, onConfirm }: BankPaymentProps
 
         <div className="bg-muted p-4 rounded-lg space-y-3">
           <h4 className="font-semibold text-sm">Bank Transfer Details</h4>
-
           <div className="space-y-2 text-sm">
-            <div className="flex justify-between items-center">
-              <span className="text-muted-foreground">Account Name:</span>
-              <div className="flex items-center gap-2">
-                <span className="font-medium">{bankDetails.accountName}</span>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => copyToClipboard(bankDetails.accountName, "Account Name")}
-                  className="h-6 w-6 p-0"
-                >
-                  {copied === "Account Name" ? (
-                    <CheckCircle className="h-3 w-3 text-green-600" />
-                  ) : (
-                    <Copy className="h-3 w-3" />
-                  )}
-                </Button>
+            {Object.entries({
+              "Account Name": bankDetails.accountName,
+              "Account Number": bankDetails.accountNumber,
+              "Bank Code": bankDetails.bankCode,
+              Reference: bankDetails.reference,
+            }).map(([label, value]) => (
+              <div key={label} className="flex justify-between items-center">
+                <span className="text-muted-foreground">{label}:</span>
+                <div className="flex items-center gap-2">
+                  <span className="font-medium">{value}</span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => copyToClipboard(value, label)}
+                    className="h-6 w-6 p-0"
+                    aria-label={`Copy ${label}`}
+                  >
+                    {copied === label ? (
+                      <CheckCircle className="h-3 w-3 text-green-600" />
+                    ) : (
+                      <Copy className="h-3 w-3" />
+                    )}
+                  </Button>
+                </div>
               </div>
-            </div>
-
-            <div className="flex justify-between items-center">
-              <span className="text-muted-foreground">Account Number:</span>
-              <div className="flex items-center gap-2">
-                <span className="font-medium">{bankDetails.accountNumber}</span>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => copyToClipboard(bankDetails.accountNumber, "Account Number")}
-                  className="h-6 w-6 p-0"
-                >
-                  {copied === "Account Number" ? (
-                    <CheckCircle className="h-3 w-3 text-green-600" />
-                  ) : (
-                    <Copy className="h-3 w-3" />
-                  )}
-                </Button>
-              </div>
-            </div>
-
-            <div className="flex justify-between items-center">
-              <span className="text-muted-foreground">Bank Code:</span>
-              <div className="flex items-center gap-2">
-                <span className="font-medium">{bankDetails.bankCode}</span>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => copyToClipboard(bankDetails.bankCode, "Bank Code")}
-                  className="h-6 w-6 p-0"
-                >
-                  {copied === "Bank Code" ? (
-                    <CheckCircle className="h-3 w-3 text-green-600" />
-                  ) : (
-                    <Copy className="h-3 w-3" />
-                  )}
-                </Button>
-              </div>
-            </div>
-
-            <div className="flex justify-between items-center">
-              <span className="text-muted-foreground">Reference:</span>
-              <div className="flex items-center gap-2">
-                <span className="font-medium">{bankDetails.reference}</span>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => copyToClipboard(bankDetails.reference, "Reference")}
-                  className="h-6 w-6 p-0"
-                >
-                  {copied === "Reference" ? (
-                    <CheckCircle className="h-3 w-3 text-green-600" />
-                  ) : (
-                    <Copy className="h-3 w-3" />
-                  )}
-                </Button>
-              </div>
-            </div>
-
+            ))}
             <div className="pt-2 border-t">
               <div className="flex justify-between items-center">
                 <span className="text-muted-foreground">Amount:</span>
@@ -160,12 +109,15 @@ export function BankPayment({ amount, orderNumber, onConfirm }: BankPaymentProps
 
         <div className="bg-yellow-50 border border-yellow-200 p-3 rounded-lg">
           <p className="text-sm text-yellow-800">
-            <strong>Important:</strong> Please use the reference number "{orderNumber}" when making the transfer. This
-            helps us identify your payment quickly.
+            <strong>Important:</strong> Please use the reference number "{orderNumber}" when making the transfer.
           </p>
         </div>
 
-        <Button onClick={onConfirm} disabled={!selectedBank} className="w-full">
+        <Button
+          onClick={onConfirm}
+          disabled={!selectedBank}
+          className="w-full"
+        >
           I have made the transfer
         </Button>
 

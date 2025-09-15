@@ -16,7 +16,7 @@ const orders = [
     customer: "John Doe",
     email: "john@example.com",
     total: 145000,
-    status: "processing",
+    status: "paid", // ✅ backend-aligned
     date: "2024-01-15",
     items: 2,
   },
@@ -51,7 +51,7 @@ const orders = [
 
 const statusColors = {
   pending: "bg-yellow-100 text-yellow-800",
-  processing: "bg-blue-100 text-blue-800",
+  paid: "bg-blue-100 text-blue-800",
   shipped: "bg-purple-100 text-purple-800",
   delivered: "bg-green-100 text-green-800",
   cancelled: "bg-red-100 text-red-800",
@@ -75,6 +75,7 @@ export function OrderTable() {
         <CardTitle>Orders</CardTitle>
       </CardHeader>
       <CardContent>
+        {/* Search + Filter */}
         <div className="flex items-center space-x-2 mb-4">
           <div className="relative flex-1 max-w-sm">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
@@ -92,7 +93,7 @@ export function OrderTable() {
             <SelectContent>
               <SelectItem value="all">All Status</SelectItem>
               <SelectItem value="pending">Pending</SelectItem>
-              <SelectItem value="processing">Processing</SelectItem>
+              <SelectItem value="paid">Paid</SelectItem>
               <SelectItem value="shipped">Shipped</SelectItem>
               <SelectItem value="delivered">Delivered</SelectItem>
               <SelectItem value="cancelled">Cancelled</SelectItem>
@@ -100,6 +101,7 @@ export function OrderTable() {
           </Select>
         </div>
 
+        {/* Orders Table */}
         <Table>
           <TableHeader>
             <TableRow>
@@ -125,7 +127,9 @@ export function OrderTable() {
                 <TableCell>{order.items}</TableCell>
                 <TableCell>KSh {order.total.toLocaleString()}</TableCell>
                 <TableCell>
-                  <Badge className={statusColors[order.status as keyof typeof statusColors]}>{order.status}</Badge>
+                  <Badge className={statusColors[order.status as keyof typeof statusColors]}>
+                    {order.status}
+                  </Badge>
                 </TableCell>
                 <TableCell>{order.date}</TableCell>
                 <TableCell>
@@ -142,7 +146,7 @@ export function OrderTable() {
                       </DropdownMenuItem>
                       <DropdownMenuItem>
                         <Package className="h-4 w-4 mr-2" />
-                        Mark as Processing
+                        Mark as Paid
                       </DropdownMenuItem>
                       <DropdownMenuItem>
                         <Truck className="h-4 w-4 mr-2" />

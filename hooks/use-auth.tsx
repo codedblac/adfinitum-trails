@@ -8,16 +8,11 @@ import {
   ReactNode,
   useCallback,
 } from "react"
-import {
-  loginUser,
-  registerUser,
-  getProfile,
-  logoutUser,
-} from "@/lib/auth"
+import { loginUser, registerUser, getProfile, logoutUser } from "@/lib/auth"
 
 // ---------- TYPES ----------
 export interface User {
-  id: string
+  id: number
   full_name: string
   email: string
   phone?: string
@@ -30,8 +25,12 @@ export interface User {
 interface AuthContextType {
   user: User | null
   login: (email: string, password: string) => Promise<void>
-  register: (fullName: string, email: string, password: string) => Promise<void>
-  logout: () => void
+  register: (
+    fullName: string,
+    email: string,
+    password: string
+  ) => Promise<void>
+  logout: () => Promise<void>
   isLoading: boolean
 }
 
@@ -56,10 +55,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       try {
         const me = await getProfile()
         if (mounted) setUser(me)
-      } catch {
+      } catch (err) {
         if (mounted) {
           setUser(null)
-          logoutUser() // clear bad tokens
+          logoutUser() // clear invalid tokens
         }
       } finally {
         if (mounted) setIsLoading(false)
