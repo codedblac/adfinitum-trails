@@ -14,7 +14,7 @@ import { useAuth } from "@/hooks/use-auth"
 export function ProfileForm() {
   const { user } = useAuth()
   const [formData, setFormData] = useState({
-    name: user?.fullName || "",
+    name: user?.full_name || "",
     email: user?.email || "",
     phone: "",
     address: "",

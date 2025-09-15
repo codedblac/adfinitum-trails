@@ -147,15 +147,29 @@ export async function getProducts(
   }
 
   const query = params.toString() ? `?${params.toString()}` : ""
-  const data = await apiRequest<PaginatedResponse<any>>(
-    `${API_ENDPOINTS.products.list}${query}`
-  )
 
-  return {
-    ...data,
-    results: data.results.map(normalizeProduct),
+  try {
+    const data = await apiRequest<PaginatedResponse<any>>(
+      `${API_ENDPOINTS.products.list}${query}`
+    )
+
+    return {
+      ...data,
+      results: Array.isArray(data?.results)
+        ? data.results.map(normalizeProduct)
+        : [], // ✅ fallback
+    }
+  } catch (error) {
+    console.error("Error fetching products:", error)
+    return {
+      count: 0,
+      next: null,
+      previous: null,
+      results: [], // ✅ safe empty response
+    }
   }
 }
+
 
 export async function getProductBySlug(slug: string): Promise<Product> {
   const p = await apiRequest(API_ENDPOINTS.products.detail(slug))

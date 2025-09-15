@@ -1,124 +1,117 @@
-"use client"
-
-import { notFound } from "next/navigation"
-import { useEffect, useState } from "react"
-import { ProductCard } from "@/components/home/product-card"
-import { Badge } from "@/components/ui/badge"
-import { Product } from "@/lib/products"
-import { fetchCategoryById, fetchCategoryProducts } from "@/lib/api"
+import { Suspense } from "react"
+import CategoryPageClient from "./CategoryPageClient"
+import { Skeleton } from "@/components/ui/skeleton"
 
 interface CategoryPageProps {
-  params: {
-    category: string // category ID or slug
-  }
+  params: Promise<{
+    category: string
+  }>
 }
 
-export default function CategoryPage({ params }: CategoryPageProps) {
-  const { category } = params
-  const [products, setProducts] = useState<Product[]>([])
-  const [brands, setBrands] = useState<string[]>([])
-  const [title, setTitle] = useState("Category")
-  const [description, setDescription] = useState("")
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-
-  useEffect(() => {
-    async function loadCategory() {
-      try {
-        setLoading(true)
-        setError(null)
-
-        // 1️⃣ Fetch category details
-        const categoryData = await fetchCategoryById(Number(category))
-        if (!categoryData) {
-          notFound()
-          return
-        }
-
-        setTitle(categoryData.name || categoryData.title || "Category")
-        setDescription(categoryData.description || "")
-
-        // 2️⃣ Fetch products
-        const productsData: Product[] = await fetchCategoryProducts(category)
-        setProducts(productsData || [])
-
-        // 3️⃣ Extract unique brands
-        const brandList = Array.from(
-          new Set(
-            (productsData || []).map((p) =>
-              typeof p.brand === "string" ? p.brand : p.brand?.name
-            )
-          )
-        ).filter(Boolean) as string[]
-
-        setBrands(brandList)
-      } catch (err) {
-        setError("Failed to load category data. Please try again later.")
-        console.error("CategoryPage error:", err)
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    loadCategory()
-  }, [category])
-
-  if (loading) {
-    return <div className="container mx-auto px-4 py-8">Loading category...</div>
-  }
-
-  if (error) {
-    return (
-      <div className="container mx-auto px-4 py-8 text-red-600">
-        {error}
-      </div>
-    )
-  }
-
-  if (!products.length) {
-    return (
-      <div className="container mx-auto px-4 py-8">
-        No products found in this category.
-      </div>
-    )
-  }
-
+// ✅ Skeleton Loader (server fallback)
+function CategoryPageSkeleton() {
   return (
     <div className="container mx-auto px-4 py-8">
-      {/* Category Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">{title}</h1>
-        {description && (
-          <p className="text-muted-foreground mb-6">{description}</p>
-        )}
-
-        {/* Brand Tags */}
-        {brands.length > 0 && (
-          <div className="flex flex-wrap gap-2">
-            <span className="text-sm font-medium">Popular Brands:</span>
-            {brands.map((brand) => (
-              <Badge key={brand} variant="outline">
-                {brand}
-              </Badge>
-            ))}
-          </div>
-        )}
+      <Skeleton className="h-8 w-64 mb-4" />
+      <div className="flex gap-2 mb-6">
+        {[...Array(3)].map((_, i) => (
+          <Skeleton key={i} className="h-6 w-20 rounded-full" />
+        ))}
       </div>
-
-      {/* Products Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-        {products.map((product) => (
-          <ProductCard key={product.id} product={product} />
+        {[...Array(8)].map((_, i) => (
+          <Skeleton key={i} className="h-64 w-full rounded-xl" />
         ))}
       </div>
     </div>
   )
 }
 
-// ✅ Optional Static Generation
-// Replace with dynamic fetch if API provides categories
+// ✅ SEO Metadata
+export async function generateMetadata({ params }: CategoryPageProps) {
+  const { category } = await params // 🔥 await params here
+
+  try {
+    const res = await fetch(
+      `${process.env.NEXT_PUBLIC_API_URL}/api/categories/${category}/`,
+      { cache: "no-store" }
+    )
+
+    if (!res.ok) {
+      return { title: "Category Not Found" }
+    }
+
+    const categoryData = await res.json()
+    return {
+      title: `${categoryData.name} | AD Finitum Trails`,
+      description:
+        categoryData.description ||
+        "Browse products in this category on AD Finitum Trails.",
+    }
+  } catch (error) {
+    console.error("Metadata fetch error:", error)
+    return { title: "Category | AD Finitum Trails" }
+  }
+}
+
+// ✅ Static Params (SSG)
 export async function generateStaticParams() {
-  // Example: Pretend we have only 2 categories
-  // Ideally, fetch category list from your API
-  return [{ category: "1" }, { category: "2" }]
+  try {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/categories/`)
+    if (!res.ok) return []
+
+    const categories = await res.json()
+    return categories.map((cat: any) => ({
+      category: String(cat.id), // or cat.slug
+    }))
+  } catch (error) {
+    console.error("Failed to fetch categories for static params:", error)
+    return []
+  }
+}
+
+// ✅ Main Page
+export default async function CategoryPage({ params }: CategoryPageProps) {
+  const { category } = await params // 🔥 await params here
+
+  async function loadData() {
+    try {
+      const [categoryRes, productsRes] = await Promise.all([
+        fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/api/categories/${category}/`,
+          { cache: "no-store" }
+        ),
+        fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/api/categories/${category}/products/`,
+          { cache: "no-store" }
+        ),
+      ])
+
+      const categoryData = categoryRes.ok ? await categoryRes.json() : null
+      const products = productsRes.ok ? await productsRes.json() : []
+
+      return (
+        <CategoryPageClient
+          category={category}
+          categoryData={categoryData}
+          products={products}
+        />
+      )
+    } catch (error) {
+      console.error("Category page error:", error)
+      return (
+        <CategoryPageClient
+          category={category}
+          categoryData={null}
+          products={[]}
+        />
+      )
+    }
+  }
+
+  return (
+    <Suspense fallback={<CategoryPageSkeleton />}>
+      {await loadData()}
+    </Suspense>
+  )
 }
