@@ -1,20 +1,79 @@
+// lib/api.ts
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1"
 const REFRESH_ENDPOINT = "/accounts/token/refresh/"
 
 // ------------------ ENDPOINTS ------------------
 export const API_ENDPOINTS = {
-  accounts: { register: "/accounts/register/", login: "/accounts/login/", logout: "/accounts/logout/", me: "/accounts/me/", refresh: REFRESH_ENDPOINT },
-  users: { list: "/accounts/users/", detail: (id: number) => `/accounts/users/${id}/`, update: (id: number) => `/accounts/users/${id}/update/`, delete: (id: number) => `/accounts/users/${id}/delete/` },
-  products: { list: "/products/products/", detail: (slug: string) => `/products/products/${slug}/`, create: "/products/products/create/", update: (id: number) => `/products/products/${id}/update/`, delete: (id: number) => `/products/products/${id}/delete/` },
-  categories: { list: "/products/categories/", detail: (id: number) => `/products/categories/${id}/`, create: "/products/categories/create/", update: (id: number) => `/products/categories/${id}/update/`, delete: (id: number) => `/products/categories/${id}/delete/` },
+  accounts: {
+    register: "/accounts/register/",
+    login: "/accounts/login/",
+    logout: "/accounts/logout/",
+    me: "/accounts/me/",
+    refresh: REFRESH_ENDPOINT,
+  },
+  users: {
+    list: "/accounts/users/",
+    detail: (id: number) => `/accounts/users/${id}/`,
+    update: (id: number) => `/accounts/users/${id}/update/`,
+    delete: (id: number) => `/accounts/users/${id}/delete/`,
+  },
+  products: {
+    list: "/products/products/",
+    detail: (slug: string) => `/products/products/${slug}/`,
+    create: "/products/products/create/",
+    update: (id: number) => `/products/products/${id}/update/`,
+    delete: (id: number) => `/products/products/${id}/delete/`,
+  },
+  categories: {
+    list: "/products/categories/",
+    detail: (id: number) => `/products/categories/${id}/`,
+    create: "/products/categories/create/",
+    update: (id: number) => `/products/categories/${id}/update/`,
+    delete: (id: number) => `/products/categories/${id}/delete/`,
+  },
   brands: { list: "/products/brands/" },
-  heroBanners: { list: "/products/hero-banners/", detail: (id: number) => `/products/hero-banners/${id}/`, create: "/products/hero-banners/create/", update: (id: number) => `/products/hero-banners/${id}/update/`, delete: (id: number) => `/products/hero-banners/${id}/delete/` },
-  cart: { list: "/cart/cart/", add: "/cart/cart/items/", update: (id: number) => `/cart/cart/items/${id}/`, remove: (id: number) => `/cart/cart/items/${id}/`, clear: "/cart/cart/clear/", applyCoupon: "/cart/cart/apply-coupon/" },
-  orders: { list: "/orders/orders/", create: "/orders/orders/", detail: (id: number | string) => `/orders/orders/${id}/` },
-  payments: { list: "/payments/payments/", detail: (id: number | string) => `/payments/payments/${id}/`, mpesaInitiate: "/payments/mpesa/initiate/", mpesaCallback: "/payments/mpesa/callback/", bankSubmit: "/payments/bank/submit/" },
-  shipping: { addresses: "/shipping/addresses/", methods: "/shipping/methods/", shipments: "/shipping/shipments/", history: (shipmentId: number) => `/shipping/shipments/${shipmentId}/history/` },
-  hero: { list: "/hero/hero-slides/", detail: (id: number) => `/hero/hero-slides/${id}/` },
-  analytics: { overview: "/analytics/overview/", sales: "/analytics/sales/", recentOrders: "/analytics/recent-orders/" },
+  heroBanners: {
+    list: "/products/hero-banners/",
+    detail: (id: number) => `/products/hero-banners/${id}/`,
+    create: "/products/hero-banners/create/",
+    update: (id: number) => `/products/hero-banners/${id}/update/`,
+    delete: (id: number) => `/products/hero-banners/${id}/delete/`,
+  },
+  cart: {
+    list: "/cart/cart/",
+    add: "/cart/cart/items/",
+    update: (id: number) => `/cart/cart/items/${id}/`,
+    remove: (id: number) => `/cart/cart/items/${id}/`,
+    clear: "/cart/cart/clear/",
+    applyCoupon: "/cart/cart/apply-coupon/",
+  },
+  orders: {
+    list: "/orders/orders/",
+    create: "/orders/orders/",
+    detail: (id: number | string) => `/orders/orders/${id}/`,
+  },
+  payments: {
+    list: "/payments/payments/",
+    detail: (id: number | string) => `/payments/payments/${id}/`,
+    mpesaInitiate: "/payments/mpesa/initiate/",
+    mpesaCallback: "/payments/mpesa/callback/",
+    bankSubmit: "/payments/bank/submit/",
+  },
+  shipping: {
+    addresses: "/shipping/addresses/",
+    methods: "/shipping/methods/",
+    shipments: "/shipping/shipments/",
+    history: (shipmentId: number) => `/shipping/shipments/${shipmentId}/history/`,
+  },
+  hero: {
+    list: "/hero/hero-slides/",
+    detail: (id: number) => `/hero/hero-slides/${id}/`,
+  },
+  analytics: {
+    overview: "/analytics/overview/",
+    sales: "/analytics/sales/",
+    recentOrders: "/analytics/recent-orders/",
+  },
 }
 
 // ------------------ TOKEN HELPERS ------------------
@@ -33,6 +92,12 @@ function removeTokens() {
   }
 }
 
+function redirectToLogin() {
+  if (typeof window !== "undefined") {
+    window.location.href = "/login"
+  }
+}
+
 async function refreshAccessToken(): Promise<string | null> {
   const refresh = typeof window !== "undefined" ? localStorage.getItem("refresh") : null
   if (!refresh) return null
@@ -46,6 +111,7 @@ async function refreshAccessToken(): Promise<string | null> {
 
     if (!res.ok) {
       removeTokens()
+      redirectToLogin()
       return null
     }
 
@@ -54,16 +120,30 @@ async function refreshAccessToken(): Promise<string | null> {
     return data.access
   } catch (err) {
     console.error("Failed to refresh token:", err)
+    removeTokens()
+    redirectToLogin()
     return null
   }
 }
 
 // ------------------ GENERIC API REQUEST ------------------
-export async function apiRequest<T = any>(endpoint: string, options: RequestInit = {}, retry = true): Promise<T> {
-  if (typeof window === "undefined") throw new Error("apiRequest cannot be called on server")
+export async function apiRequest<T = any>(
+  endpoint: string,
+  options: RequestInit = {},
+  retry = true
+): Promise<T> {
+  if (typeof window === "undefined")
+    throw new Error("apiRequest cannot be called on server")
 
   let token = getAccessToken()
-  const headers: HeadersInit = { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}), ...(options.headers || {}) }
+
+  // detect FormData to avoid forcing JSON headers
+  const isFormData = options.body instanceof FormData
+  const headers: HeadersInit = {
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    ...(isFormData ? {} : { "Content-Type": "application/json" }),
+    ...(options.headers || {}),
+  }
 
   let res = await fetch(`${API_URL}${endpoint}`, { ...options, headers })
 
@@ -77,16 +157,17 @@ export async function apiRequest<T = any>(endpoint: string, options: RequestInit
     let errorMsg = `API error: ${res.status}`
     try {
       const errData = await res.json()
-      errorMsg = errData.detail || errData.message || errData.error || errorMsg
+      errorMsg =
+        errData.detail || errData.message || errData.error || errorMsg
     } catch {}
-    throw new Error(errorMsg)
+    throw new Error(`API error ${res.status} at ${endpoint}: ${errorMsg}`)
   }
 
   if (res.status === 204) return null as T
 
-  // Check if response is JSON
   const contentType = res.headers.get("Content-Type") || ""
-  if (contentType.includes("application/json")) return res.json() as Promise<T>
+  if (contentType.includes("application/json"))
+    return res.json() as Promise<T>
   return res.text() as unknown as T
 }
 
@@ -94,7 +175,9 @@ export async function apiRequest<T = any>(endpoint: string, options: RequestInit
 
 // Products
 export async function fetchProducts(params?: Record<string, any>) {
-  const query = params ? `?${new URLSearchParams(params as Record<string, string>).toString()}` : ""
+  const query = params
+    ? `?${new URLSearchParams(params as Record<string, string>).toString()}`
+    : ""
   return apiRequest(`${API_ENDPOINTS.products.list}${query}`)
 }
 export async function fetchProductBySlug(slug: string) {
@@ -102,42 +185,93 @@ export async function fetchProductBySlug(slug: string) {
 }
 
 // Orders
-export async function fetchOrders() { return apiRequest(API_ENDPOINTS.orders.list) }
-export async function fetchOrderById(id: number | string) { return apiRequest(API_ENDPOINTS.orders.detail(id)) }
-export async function createOrder(data: any) { return apiRequest(API_ENDPOINTS.orders.create, { method: "POST", body: JSON.stringify(data) }) }
+export async function fetchOrders() {
+  return apiRequest(API_ENDPOINTS.orders.list)
+}
+export async function fetchOrderById(id: number | string) {
+  return apiRequest(API_ENDPOINTS.orders.detail(id))
+}
+export async function createOrder(data: any) {
+  return apiRequest(API_ENDPOINTS.orders.create, {
+    method: "POST",
+    body: JSON.stringify(data),
+  })
+}
 
 // Payments
-export async function initiateMpesaPayment(data: { order: number; amount: number; phone_number: string }) {
-  return apiRequest(API_ENDPOINTS.payments.mpesaInitiate, { method: "POST", body: JSON.stringify(data) })
+export async function initiateMpesaPayment(data: {
+  order: number
+  amount: number
+  phone_number: string
+}) {
+  return apiRequest(API_ENDPOINTS.payments.mpesaInitiate, {
+    method: "POST",
+    body: JSON.stringify(data),
+  })
 }
 export async function submitBankTransfer(data: FormData) {
-  return apiRequest(API_ENDPOINTS.payments.bankSubmit, { method: "POST", body: data, headers: {} })
+  return apiRequest(API_ENDPOINTS.payments.bankSubmit, {
+    method: "POST",
+    body: data,
+    headers: {}, // let browser set boundary
+  })
 }
 
 // Users
-export async function fetchUsers() { return apiRequest(API_ENDPOINTS.users.list) }
-export async function fetchUserById(id: number) { return apiRequest(API_ENDPOINTS.users.detail(id)) }
-export async function updateUser(id: number, data: any) { return apiRequest(API_ENDPOINTS.users.update(id), { method: "PUT", body: JSON.stringify(data) }) }
-export async function deleteUser(id: number) { return apiRequest(API_ENDPOINTS.users.delete(id), { method: "DELETE" }) }
+export async function fetchUsers() {
+  return apiRequest(API_ENDPOINTS.users.list)
+}
+export async function fetchUserById(id: number) {
+  return apiRequest(API_ENDPOINTS.users.detail(id))
+}
+export async function updateUser(id: number, data: any) {
+  return apiRequest(API_ENDPOINTS.users.update(id), {
+    method: "PUT",
+    body: JSON.stringify(data),
+  })
+}
+export async function deleteUser(id: number) {
+  return apiRequest(API_ENDPOINTS.users.delete(id), { method: "DELETE" })
+}
 
 // Categories
-export async function fetchCategories() { return apiRequest(API_ENDPOINTS.categories.list) }
-export async function fetchCategoryById(id: number) { return apiRequest(API_ENDPOINTS.categories.detail(id)) }
-export async function fetchCategoryProducts(categoryId: number | string, extraParams?: Record<string, any>) {
-  const query = extraParams ? `?${new URLSearchParams({ category: String(categoryId), ...extraParams }).toString()}` : `?category=${categoryId}`
+export async function fetchCategories() {
+  return apiRequest(API_ENDPOINTS.categories.list)
+}
+export async function fetchCategoryById(id: number) {
+  return apiRequest(API_ENDPOINTS.categories.detail(id))
+}
+export async function fetchCategoryProducts(
+  categoryId: number | string,
+  extraParams?: Record<string, any>
+) {
+  const query = extraParams
+    ? `?${new URLSearchParams({
+        category: String(categoryId),
+        ...extraParams,
+      }).toString()}`
+    : `?category=${categoryId}`
   return apiRequest(`${API_ENDPOINTS.products.list}${query}`)
 }
 
 // Hero
-export async function fetchHeroSlides() { return apiRequest(API_ENDPOINTS.hero.list) }
+export async function fetchHeroSlides() {
+  return apiRequest(API_ENDPOINTS.hero.list)
+}
 
 // Analytics
-export async function fetchAnalyticsOverview() { return apiRequest(API_ENDPOINTS.analytics.overview) }
-export async function fetchSalesAnalytics() { return apiRequest(API_ENDPOINTS.analytics.sales) }
-export async function fetchRecentOrdersAnalytics() { return apiRequest(API_ENDPOINTS.analytics.recentOrders) }
+export async function fetchAnalyticsOverview() {
+  return apiRequest(API_ENDPOINTS.analytics.overview)
+}
+export async function fetchSalesAnalytics() {
+  return apiRequest(API_ENDPOINTS.analytics.sales)
+}
+export async function fetchRecentOrdersAnalytics() {
+  return apiRequest(API_ENDPOINTS.analytics.recentOrders)
+}
 
-// ------------------ DEFAULT EXPORT ------------------
-export default {
+// ------------------ EXPORT ------------------
+const API = {
   apiRequest,
   fetchProducts,
   fetchProductBySlug,
@@ -150,3 +284,5 @@ export default {
   initiateMpesaPayment,
   submitBankTransfer,
 }
+
+export default API

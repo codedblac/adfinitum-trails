@@ -17,14 +17,16 @@ export default function CategoryPage({ params }: CategoryPageProps) {
   const { category } = params
   const [products, setProducts] = useState<Product[]>([])
   const [brands, setBrands] = useState<string[]>([])
-  const [title, setTitle] = useState("")
+  const [title, setTitle] = useState("Category")
   const [description, setDescription] = useState("")
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     async function loadCategory() {
       try {
         setLoading(true)
+        setError(null)
 
         // 1️⃣ Fetch category details
         const categoryData = await fetchCategoryById(Number(category))
@@ -36,20 +38,23 @@ export default function CategoryPage({ params }: CategoryPageProps) {
         setTitle(categoryData.name || categoryData.title || "Category")
         setDescription(categoryData.description || "")
 
-        // 2️⃣ Fetch products for this category
+        // 2️⃣ Fetch products
         const productsData: Product[] = await fetchCategoryProducts(category)
         setProducts(productsData || [])
 
-        // 3️⃣ Extract unique brands (normalize string | Brand)
+        // 3️⃣ Extract unique brands
         const brandList = Array.from(
           new Set(
-            productsData.map((p) =>
+            (productsData || []).map((p) =>
               typeof p.brand === "string" ? p.brand : p.brand?.name
             )
           )
         ).filter(Boolean) as string[]
 
         setBrands(brandList)
+      } catch (err) {
+        setError("Failed to load category data. Please try again later.")
+        console.error("CategoryPage error:", err)
       } finally {
         setLoading(false)
       }
@@ -60,6 +65,14 @@ export default function CategoryPage({ params }: CategoryPageProps) {
 
   if (loading) {
     return <div className="container mx-auto px-4 py-8">Loading category...</div>
+  }
+
+  if (error) {
+    return (
+      <div className="container mx-auto px-4 py-8 text-red-600">
+        {error}
+      </div>
+    )
   }
 
   if (!products.length) {
@@ -75,7 +88,9 @@ export default function CategoryPage({ params }: CategoryPageProps) {
       {/* Category Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2">{title}</h1>
-        <p className="text-muted-foreground mb-6">{description}</p>
+        {description && (
+          <p className="text-muted-foreground mb-6">{description}</p>
+        )}
 
         {/* Brand Tags */}
         {brands.length > 0 && (
@@ -100,7 +115,10 @@ export default function CategoryPage({ params }: CategoryPageProps) {
   )
 }
 
-// Optional SSG
-export function generateStaticParams() {
-  return [{ category: "1" }, { category: "2" }] // use IDs or slugs
+// ✅ Optional Static Generation
+// Replace with dynamic fetch if API provides categories
+export async function generateStaticParams() {
+  // Example: Pretend we have only 2 categories
+  // Ideally, fetch category list from your API
+  return [{ category: "1" }, { category: "2" }]
 }
