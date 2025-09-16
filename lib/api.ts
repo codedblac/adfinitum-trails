@@ -18,11 +18,11 @@ export const API_ENDPOINTS = {
     delete: (id: number) => `/accounts/users/${id}/delete/`,
   },
   products: {
-    list: "/products/products/",
-    detail: (slug: string) => `/products/products/${slug}/`,
-    create: "/products/products/create/",
-    update: (id: number) => `/products/products/${id}/update/`,
-    delete: (id: number) => `/products/products/${id}/delete/`,
+    list: "/products/",
+    detail: (slug: string) => `/products/${slug}/`,
+    create: "/products/create/",
+    update: (id: number) => `/products/${id}/update/`,
+    delete: (id: number) => `/products/${id}/delete/`,
   },
   categories: {
     list: "/products/categories/",
@@ -40,21 +40,21 @@ export const API_ENDPOINTS = {
     delete: (id: number) => `/products/hero-banners/${id}/delete/`,
   },
   cart: {
-    list: "/cart/cart/",
-    add: "/cart/cart/items/",
-    update: (id: number) => `/cart/cart/items/${id}/`,
-    remove: (id: number) => `/cart/cart/items/${id}/`,
-    clear: "/cart/cart/clear/",
-    applyCoupon: "/cart/cart/apply-coupon/",
+    list: "/cart/",
+    add: "/cart/items/",
+    update: (id: number) => `/cart/items/${id}/`,
+    remove: (id: number) => `/cart/items/${id}/`,
+    clear: "/cart/clear/",
+    applyCoupon: "/cart/apply-coupon/",
   },
   orders: {
-    list: "/orders/orders/",
-    create: "/orders/orders/",
-    detail: (id: number | string) => `/orders/orders/${id}/`,
+    list: "/orders/",
+    create: "/orders/",
+    detail: (id: number | string) => `/orders/${id}/`,
   },
   payments: {
-    list: "/payments/payments/",
-    detail: (id: number | string) => `/payments/payments/${id}/`,
+    list: "/payments/",
+    detail: (id: number | string) => `/payments/${id}/`,
     mpesaInitiate: "/payments/mpesa/initiate/",
     mpesaCallback: "/payments/mpesa/callback/",
     bankSubmit: "/payments/bank/submit/",
@@ -137,7 +137,6 @@ export async function apiRequest<T = any>(
 
   let token = getAccessToken()
 
-  // detect FormData to avoid forcing JSON headers
   const isFormData = options.body instanceof FormData
   const headers: HeadersInit = {
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
@@ -147,7 +146,6 @@ export async function apiRequest<T = any>(
 
   let res = await fetch(`${API_URL}${endpoint}`, { ...options, headers })
 
-  // Refresh token on 401 and retry once
   if (res.status === 401 && retry) {
     const newToken = await refreshAccessToken()
     if (newToken) return apiRequest<T>(endpoint, options, false)
@@ -172,6 +170,23 @@ export async function apiRequest<T = any>(
 }
 
 // ------------------ HELPERS ------------------
+
+// Accounts
+export async function loginUser(data: { email: string; password: string }) {
+  return apiRequest(API_ENDPOINTS.accounts.login, {
+    method: "POST",
+    body: JSON.stringify(data),
+  })
+}
+export async function registerUser(data: any) {
+  return apiRequest(API_ENDPOINTS.accounts.register, {
+    method: "POST",
+    body: JSON.stringify(data),
+  })
+}
+export async function fetchMe() {
+  return apiRequest(API_ENDPOINTS.accounts.me)
+}
 
 // Products
 export async function fetchProducts(params?: Record<string, any>) {
@@ -273,6 +288,9 @@ export async function fetchRecentOrdersAnalytics() {
 // ------------------ EXPORT ------------------
 const API = {
   apiRequest,
+  loginUser,
+  registerUser,
+  fetchMe,
   fetchProducts,
   fetchProductBySlug,
   fetchHeroSlides,
