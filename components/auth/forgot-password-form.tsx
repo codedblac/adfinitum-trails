@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Mail, ArrowLeft } from "lucide-react"
 import Link from "next/link"
-import { forgotPassword } from "@/lib/auth"
+import { requestPasswordReset } from "@/lib/api" // centralized API
 
 export function ForgotPasswordForm() {
   const [email, setEmail] = useState("")
@@ -23,7 +23,7 @@ export function ForgotPasswordForm() {
     setIsLoading(true)
 
     try {
-      await forgotPassword({ email })
+      await requestPasswordReset(email) //  now uses centralized API
       setIsSubmitted(true)
     } catch (err: any) {
       console.error("Forgot password error:", err)

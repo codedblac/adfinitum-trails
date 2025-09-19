@@ -8,7 +8,12 @@ import {
   ReactNode,
   useCallback,
 } from "react"
-import { loginUser, registerUser, getProfile, logoutUser } from "@/lib/auth"
+import {
+  loginUser,
+  registerUser,
+  getProfile,
+  logoutUser,
+} from "@/lib/auth"
 
 // ---------- TYPES ----------
 export interface User {
@@ -25,11 +30,7 @@ export interface User {
 interface AuthContextType {
   user: User | null
   login: (email: string, password: string) => Promise<void>
-  register: (
-    fullName: string,
-    email: string,
-    password: string
-  ) => Promise<void>
+  register: (fullName: string, email: string, password: string) => Promise<void>
   logout: () => Promise<void>
   isLoading: boolean
 }
@@ -58,7 +59,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } catch (err) {
         if (mounted) {
           setUser(null)
-          logoutUser() // clear invalid tokens
+          await logoutUser() // clear invalid tokens & blacklist refresh
         }
       } finally {
         if (mounted) setIsLoading(false)

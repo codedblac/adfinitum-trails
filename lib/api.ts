@@ -1,5 +1,5 @@
 // lib/api.ts
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1"
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api"
 const REFRESH_ENDPOINT = "/accounts/token/refresh/"
 
 // ------------------ ENDPOINTS ------------------
@@ -10,6 +10,8 @@ export const API_ENDPOINTS = {
     logout: "/accounts/logout/",
     me: "/accounts/me/",
     refresh: REFRESH_ENDPOINT,
+    passwordReset: "/accounts/password-reset/",
+    passwordResetConfirm: "/accounts/password-reset/confirm/",
   },
   users: {
     list: "/accounts/users/",
@@ -155,8 +157,7 @@ export async function apiRequest<T = any>(
     let errorMsg = `API error: ${res.status}`
     try {
       const errData = await res.json()
-      errorMsg =
-        errData.detail || errData.message || errData.error || errorMsg
+      errorMsg = errData.detail || errData.message || errData.error || errorMsg
     } catch {}
     throw new Error(`API error ${res.status} at ${endpoint}: ${errorMsg}`)
   }
@@ -186,6 +187,23 @@ export async function registerUser(data: any) {
 }
 export async function fetchMe() {
   return apiRequest(API_ENDPOINTS.accounts.me)
+}
+export async function requestPasswordReset(email: string) {
+  return apiRequest(API_ENDPOINTS.accounts.passwordReset, {
+    method: "POST",
+    body: JSON.stringify({ email }),
+  })
+}
+export async function confirmPasswordReset(data: {
+  uid: string
+  token: string
+  new_password: string
+  re_new_password: string
+}) {
+  return apiRequest(API_ENDPOINTS.accounts.passwordResetConfirm, {
+    method: "POST",
+    body: JSON.stringify(data),
+  })
 }
 
 // Products
@@ -281,6 +299,10 @@ export async function fetchAnalyticsOverview() {
 export async function fetchSalesAnalytics() {
   return apiRequest(API_ENDPOINTS.analytics.sales)
 }
+export async function fetchCategoryAnalytics() {
+  return apiRequest(API_ENDPOINTS.analytics.sales)
+}
+
 export async function fetchRecentOrdersAnalytics() {
   return apiRequest(API_ENDPOINTS.analytics.recentOrders)
 }
@@ -291,6 +313,8 @@ const API = {
   loginUser,
   registerUser,
   fetchMe,
+  requestPasswordReset,
+  confirmPasswordReset,
   fetchProducts,
   fetchProductBySlug,
   fetchHeroSlides,

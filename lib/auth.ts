@@ -1,6 +1,6 @@
 import { apiRequest } from "./api";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
 
 // ---------- TYPES ----------
 interface LoginPayload {
@@ -21,6 +21,13 @@ interface RegisterPayload {
 
 interface ForgotPasswordPayload {
   email: string;
+}
+
+interface ResetPasswordConfirmPayload {
+  uid: string;
+  token: string;
+  new_password: string;
+  confirm_password: string;
 }
 
 interface UpdateProfilePayload {
@@ -115,6 +122,19 @@ export async function forgotPassword({ email }: ForgotPasswordPayload) {
   return apiRequest("/accounts/password-reset/", {
     method: "POST",
     body: JSON.stringify({ email }),
+  });
+}
+
+// ---------- RESET PASSWORD CONFIRM ----------
+export async function resetPasswordConfirm(data: ResetPasswordConfirmPayload) {
+  return apiRequest("/accounts/password-reset/confirm/", {
+    method: "POST",
+    body: JSON.stringify({
+      uid: data.uid,
+      token: data.token,
+      new_password: data.new_password,
+      confirm_password: data.confirm_password,
+    }),
   });
 }
 
