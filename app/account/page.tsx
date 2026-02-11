@@ -15,6 +15,8 @@ export default function AccountPage() {
   const router = useRouter()
 
   // Redirect if not authenticated
+
+  
   if (!user) {
     router.push("/auth/login")
     return null
