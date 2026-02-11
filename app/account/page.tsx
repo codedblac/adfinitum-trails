@@ -78,6 +78,8 @@ export default function AccountPage() {
         </div>
 
         {/* Account Details */}
+
+        
         <div className="lg:col-span-3">
           <Tabs defaultValue="profile" className="space-y-6">
             <TabsList>
