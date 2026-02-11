@@ -195,6 +195,8 @@ export default function CheckoutPage() {
             </div>
           )}
 
+
+          
           {currentStep === 3 && shippingData && paymentData && (
             <div className="space-y-6">
               {/* Order Review */}
